@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Pergerakan BI-FAST &amp; Cyber Fraud 5 Layer Bank — Security Perimeter &amp; FDS</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #090E1A;
+    color: #F1F5F9;
+    overflow-x: hidden;
+  }
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .soc-card {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(51, 65, 85, 0.85);
+  }
+  .node-clickable {
+    cursor: pointer;
+    transition: filter 0.2s ease;
+  }
+  .node-clickable:hover {
+    filter: brightness(1.18);
+  }
+  @keyframes pulseRing {
+    0% { opacity: 0.9; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.7); }
+  }
+  .pulse-ring {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: pulseRing 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  }
+  .dash-flow {
+    stroke-dasharray: 7 6;
+    animation: dashMove 1.1s linear infinite;
+  }
+  @keyframes dashMove {
+    to { stroke-dashoffset: -26; }
+  }
+  .log-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .log-scroll::-webkit-scrollbar-track {
+    background: #0F172A;
+  }
+  .log-scroll::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+  }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP HEADER & CONTROLS -->
+  <header class="border-b border-slate-800 bg-slate-950/90 backdrop-blur px-4 lg:px-6 py-3 sticky top-0 z-20">
+    <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-[#EF3E23] to-[#F58220] flex items-center justify-center font-extrabold text-white text-sm shadow-lg shadow-red-950/40">
+          BI
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white leading-tight">
+            Simulasi Pergerakan BI-FAST &amp; Cyber Fraud 5 Layer Bank
+          </h1>
+          <p class="text-xs text-slate-400">
+            Visualisasi Alur ISO 20022 (<span class="mono text-sky-400">pacs.008</span> / <span class="mono text-sky-400">prxy</span> / <span class="mono text-sky-400">pacs.002</span>), Security Perimeter, FDS, &amp; SLA Lapor Fraud 30 Menit (PADG 14/2025)
+          </p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex rounded-lg bg-slate-900 p-1 border border-slate-700" role="group">
+          <button id="btnModeBreach" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md transition bg-[#EF3E23] text-white">
+            Mode A: Lolos 5 Layer
+          </button>
+          <button id="btnModeBlocked" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white">
+            Mode B: Terblokir FDS (&lt;30 Mnt)
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 lg:px-6 py-4 grid grid-cols-1 xl:grid-cols-12 gap-4">
+
+    <!-- LEFT / CENTER: INTERACTIVE ANIMATED TOPOLOGY (8 cols) -->
+    <section class="xl:col-span-8 flex flex-col gap-3">
+
+      <!-- Playback & KPI Bar -->
+      <div class="soc-card rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button id="btnPlay" type="button" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition">
+            <span id="playIcon">▶</span> <span id="playLabel">Jalankan Simulasi</span>
+          </button>
+          <button id="btnPrev" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+            ⏮ Mundur
+          </button>
+          <button id="btnNext" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+            Langkah Berikut ⏭
+          </button>
+          <button id="btnReset" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
+            ↺ Reset
+          </button>
+          <button id="btnSpeed" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-400 mono text-xs font-semibold border border-slate-700 transition">
+            1.0x
+          </button>
+        </div>
+
+        <!-- Live Counters -->
+        <div class="flex items-center gap-4 text-xs">
+          <div>
+            <div class="text-slate-400 text-[11px]">Waktu Berlalu</div>
+            <div id="kpiTime" class="mono font-bold text-sm text-sky-300">00:00</div>
+          </div>
+          <div class="h-7 w-px bg-slate-700"></div>
+          <div>
+            <div class="text-slate-400 text-[11px]">SLA Lapor Fraud BI</div>
+            <div id="kpiSla" class="mono font-bold text-sm text-emerald-400">30:00 tersisa</div>
+          </div>
+          <div class="h-7 w-px bg-slate-700"></div>
+          <div>
+            <div class="text-slate-400 text-[11px]">Status Dana (Rp 250 Jt)</div>
+            <div id="kpiFundStatus" class="mono font-bold text-sm text-amber-300">Siap Simulasi</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANIMATED SVG STAGE -->
+      <div class="soc-card rounded-xl p-3 relative overflow-hidden">
+        <!-- Legend Row -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-800 text-[11px] text-slate-300">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> Paket Fraud (<span class="mono">pacs.008</span>)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Rel BI-FAST (CI-HUB)</span>
+            <span class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-700 mono text-[10px]">BYPASS</span> Perimeter Tembus</span>
+            <span class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-600 mono text-[10px]">ALERT</span> Deteksi FDS</span>
+            <span class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-600 mono text-[10px]">BLOCKED</span> Ditahan / Dibekukan</span>
+          </div>
+          <span class="text-slate-400 italic">Klik node bank atau perisai FDS untuk melihat detail</span>
+        </div>
+
+        <div class="w-full overflow-x-auto">
+          <svg id="simSvg" viewBox="0 0 960 540" class="w-full h-auto min-w-[680px] select-none" role="img" aria-label="Simulasi animasi pergerakan dana BI-FAST melalui 5 layer bank dan security perimeter">
+            <defs>
+              <radialGradient id="hubGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#0EA5E9" stop-opacity="0.32"/>
+                <stop offset="100%" stop-color="#0EA5E9" stop-opacity="0"/>
+              </radialGradient>
+              <filter id="glowRed" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowCyan" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="3" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- Background Subtle Grid -->
+            <rect x="0" y="0" width="960" height="540" fill="#0B1221" rx="8"/>
+            <g stroke="#1E293B" stroke-width="0.6" opacity="0.6">
+              <line x1="0" y1="90" x2="960" y2="90"/>
+              <line x1="0" y1="180" x2="960" y2="180"/>
+              <line x1="0" y1="270" x2="960" y2="270"/>
+              <line x1="0" y1="360" x2="960" y2="360"/>
+              <line x1="0" y1="450" x2="960" y2="450"/>
+              <line x1="160" y1="0" x2="160" y2="540"/>
+              <line x1="320" y1="0" x2="320" y2="540"/>
+              <line x1="480" y1="0" x2="480" y2="540"/>
+              <line x1="640" y1="0" x2="640" y2="540"/>
+              <line x1="800" y1="0" x2="800" y2="540"/>
+            </g>
+
+            <!-- Zone Watermark Labels -->
+            <text x="18" y="24" fill="#64748B" font-size="11" font-weight="700" class="mono">ZONA KORBAN (UNTRUSTED → DMZ → INTERNAL → EGRESS)</text>
+            <text x="380" y="24" fill="#38BDF8" font-size="11" font-weight="700" class="mono">SENTRAL BI-FAST (24/7 IRREVOCABLE)</text>
+            <text x="678" y="24" fill="#F87171" font-size="11" font-weight="700" class="mono">RANTAI 5 LAYER BANK (LAYERING → EXIT)</text>
+
+            <!-- CI-HUB Ambient Glow -->
+            <circle cx="480" cy="270" r="105" fill="url(#hubGlow)"/>
+
+
+
+            <!-- Clean Star-Ring Conduits (drawn by JS for exact math alignment with packet animation) -->
+            <g id="dynamicConduits"></g>
+
+            <!-- CENTRAL NODE: CI-HUB BANK INDONESIA -->
+            <g id="node-cihub" class="node-clickable" data-node="cihub">
+              <circle cx="480" cy="270" r="64" fill="#0F172A" stroke="#38BDF8" stroke-width="2.5"/>
+              <circle id="cihubPulse" cx="480" cy="270" r="64" fill="none" stroke="#38BDF8" stroke-width="1.5" opacity="0"/>
+              <text x="480" y="248" text-anchor="middle" fill="#38BDF8" font-size="10" font-weight="700" class="mono">BANK INDONESIA</text>
+              <text x="480" y="268" text-anchor="middle" fill="#FFFFFF" font-size="16" font-weight="800">CI-HUB</text>
+              <text x="480" y="285" text-anchor="middle" fill="#94A3B8" font-size="9.5" class="mono">BI-FAST 24/7</text>
+              <rect x="430" y="294" width="100" height="20" rx="10" fill="#082F49" stroke="#0284C7" stroke-width="1"/>
+              <text id="badge-cihub" x="480" y="307" text-anchor="middle" fill="#7DD3FC" font-size="9" font-weight="700" class="mono">AFDS SENTRAL</text>
+            </g>
+
+            <!-- BANK & LAYER NODES (Rendered cleanly with exact coordinates) -->
+            <g id="nodesLayer"></g>
+
+            <!-- SECURITY PERIMETER / FDS CHECKPOINT SHIELDS ON CONDUITS -->
+            <g id="shieldsLayer"></g>
+
+            <!-- ANIMATED MONEY PACKET LAYER -->
+            <g id="packetsLayer"></g>
+          </svg>
+        </div>
+
+        <!-- Step Progress Stepper Bar -->
+        <div class="mt-3 pt-3 border-t border-slate-800">
+          <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
+            <span id="stepTitleBar" class="font-semibold text-white">Siap memulai simulasi — tekan "Jalankan Simulasi" atau klik "Langkah Berikut"</span>
+            <span id="stepCounter" class="mono text-sky-400">Tahap 0 / 7</span>
+          </div>
+          <div id="stepperDots" class="grid grid-cols-7 gap-1.5"></div>
+        </div>
+      </div>
+
+      <!-- STEP EXPLANATION BANNER -->
+      <div id="narrativeCard" class="soc-card rounded-xl p-4 border-l-4 border-l-sky-500">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+          <span id="narrStage" class="mono text-xs font-bold uppercase tracking-wider text-sky-400">OVERVIEW SIMULASI</span>
+          <span id="narrIso" class="mono text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">ISO 20022: Standby</span>
+        </div>
+        <h2 id="narrHeadline" class="text-sm sm:text-base font-bold text-white mb-1">
+          Bagaimana Cyber Fraud Memanfaatkan Kecepatan BI-FAST Menembus 5 Layer Bank
+        </h2>
+        <p id="narrBody" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          Pilih <strong>Mode A (Lolos 5 Layer)</strong> untuk melihat bagaimana dana Rp 250 juta hasil kompromi website/DMZ dipecah dan digerakkan melewati 5 bank penampung (<em>mule accounts</em>) secara <em>real-time</em> sebelum 30 menit, atau pilih <strong>Mode B (Terblokir FDS)</strong> untuk melihat bagaimana AFDS <em>inline</em>, deteksi <em>pass-through</em>, dan koordinasi Anti-Scam menghentikan aliran dana di Layer 3.
+        </p>
+      </div>
+    </section>
+
+    <!-- RIGHT SIDEBAR: INSPECTOR + PERIMETER MATRIX + LIVE LOG (4 cols) -->
+    <aside class="xl:col-span-4 flex flex-col gap-3">
+
+      <!-- SLA 30-Minute Gauge Card -->
+      <div class="soc-card rounded-xl p-3.5">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-bold text-white uppercase tracking-wide">SLA Pelaporan Fraud 30 Menit (PADG 14/2025)</span>
+          <span id="slaBadge" class="mono text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700">AMAN</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+          <div id="slaBar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-red-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-[11px] text-slate-400 mt-1.5 mono">
+          <span>00:00 (Kompromi)</span>
+          <span id="slaPct">0% terpakai</span>
+          <span>30:00 (Batas BI)</span>
+        </div>
+      </div>
+
+      <!-- Node / Perimeter Inspector -->
+      <div class="soc-card rounded-xl p-3.5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-sky-400 uppercase tracking-wide">Inspektor Perimeter &amp; FDS</span>
+          <span id="inspBadge" class="mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">PILIH NODE</span>
+        </div>
+        <h3 id="inspTitle" class="text-sm font-bold text-white mb-1">Klik Bank atau Perisai FDS di Diagram</h3>
+        <p id="inspDesc" class="text-xs text-slate-300 leading-relaxed mb-2.5">
+          Anda dapat mengklik salah satu node (Bank Korban, CI-HUB, Layer 1–5) atau tanda perimeter keamanan untuk melihat kontrol FDS yang dilewati, celah yang dimanfaatkan penyerang, serta rekomendasi mitigasi teknis.
+        </p>
+        <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 text-[11px] space-y-1.5">
+          <div class="flex justify-between gap-2">
+            <span class="text-slate-400">Perimeter / FDS:</span>
+            <span id="inspPerimeter" class="mono text-slate-200 text-right font-semibold">-</span>
+          </div>
+          <div class="flex justify-between gap-2">
+            <span class="text-slate-400">Pesan ISO 20022:</span>
+            <span id="inspIso" class="mono text-sky-300 text-right">-</span>
+          </div>
+          <div class="flex justify-between gap-2">
+            <span class="text-slate-400">Nominal &amp; Waktu:</span>
+            <span id="inspAmount" class="mono text-amber-300 text-right">-</span>
+          </div>
+          <div class="pt-1.5 border-t border-slate-800">
+            <span class="text-slate-400 block mb-0.5">Kontrol Mitigasi Kunci:</span>
+            <span id="inspControl" class="text-emerald-300 leading-snug block">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live SOC / ISO 20022 Telemetry Log -->
+      <div class="soc-card rounded-xl p-3.5 flex-1 flex flex-col min-h-[240px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-white uppercase tracking-wide">Live SOC &amp; ISO 20022 Event Feed</span>
+          <span id="logCount" class="mono text-[11px] text-slate-400">0 events</span>
+        </div>
+        <div id="eventLog" class="log-scroll flex-1 max-h-[270px] overflow-y-auto space-y-2 pr-1 text-xs">
+          <div class="p-2 rounded bg-slate-900/80 border border-slate-800 text-slate-400 mono text-[11px]">
+            [00:00] SOC &amp; BI-FAST Telemetry standby. Klik "Jalankan Simulasi" untuk memulai.
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <script>
+    (function () {
+      // =========================================================================
+      // DATA MODEL: NODES, PERIMETERS, AND 7-STAGE SIMULATION STEPS
+      // =========================================================================
+      const NODES = {
+        attacker: {
+          id: 'attacker', x: 98, y: 80, w: 152, h: 76,
+          title: 'Threat Actor', sub: 'UNTRUSTED (Internet)', tag: 'WEB EXPLOIT',
+          perimeter: 'WAF & DMZ Reverse Proxy',
+          iso: 'HTTP RCE / Web Shell',
+          amount: 'Target: Rp 250.000.000',
+          desc: 'Penyerang mengeksploitasi celah situs web publik/portal di zona DMZ untuk mencuri kredensial service account dan melompat secara lateral ke jaringan internal bank.',
+          control: 'Isolasi penuh server web publik dari jaringan transaksional; WAF ketat & patching rutin.'
+        },
+        origin: {
+          id: 'origin', x: 98, y: 270, w: 162, h: 108,
+          title: 'Bank Korban', sub: 'DMZ → INTERNAL → EGRESS', tag: 'KOMI + CI-CONN',
+          perimeter: 'Micro-Segmentation, PAM, HSM, AFDS Inline Egress',
+          iso: 'pacs.008 (ICT Rp 250 Jt)',
+          amount: 'Outflow: Rp 250.000.000',
+          desc: 'Setelah lateral movement menembus ESB/KOMI, instruksi transfer BI-FAST (pacs.008) dikirim melalui CI-Connector ke CI-HUB tanpa tertahan AFDS inline.',
+          control: 'Terapkan PAM just-in-time, HSM digital signature tervalidasi, dan AFDS inline + circuit breaker di gerbang Egress.'
+        },
+        cihub: {
+          id: 'cihub', x: 480, y: 270, w: 128, h: 128,
+          title: 'CI-HUB Bank Indonesia', sub: 'Central Infrastructure 24/7', tag: 'AFDS SENTRAL',
+          perimeter: 'AFDS Sentral BI + Cek Prefund Real-Time',
+          iso: 'pacs.008 → pacs.002 (ACSP)',
+          amount: 'Setelmen Irrevocable 24/7',
+          desc: 'Mesin sentral Bank Indonesia memvalidasi skema ISO 20022, mengecek saldo prefund bank pengirim, dan menyelesaikan setelmen secara real-time dan irrevocable (tidak bisa auto-reversal sepihak).',
+          control: 'Pelaporan awal fraud wajib ≤ 30 menit (PADG 14/2025) agar koordinasi blokir antar-peserta bisa dieksekusi cepat.'
+        },
+        layer1: {
+          id: 'layer1', x: 295, y: 100, w: 158, h: 78,
+          title: 'Layer 1 · Bank Mule 1', sub: 'BPD / Bank Kecil (Rek. Penampung)', tag: 'STRUCTURING',
+          perimeter: 'Inbound FDS & Velocity Rule',
+          iso: 'pacs.008 In → Split 2x Out',
+          amount: 'Masuk Rp 250 Jt → Keluar Rp 245 Jt',
+          desc: 'Dana Rp 250 juta mendarat real-time di rekening penampung (mule account). Dalam 90 detik, dana langsung dipecah (smurfing/structuring) menjadi nominal lebih kecil untuk menghindari threshold alert.',
+          control: 'Aktifkan deteksi rekening baru menerima dana jumbo + aturan velocity keluar < 5 menit.'
+        },
+        layer2: {
+          id: 'layer2', x: 665, y: 100, w: 158, h: 78,
+          title: 'Layer 2 · Bank Mule 2', sub: 'Bank Digital / Ritel (Proxy HP)', tag: 'PROXY HOP',
+          perimeter: 'Proxy Anomaly & Mule Account Scoring',
+          iso: 'prxy.003 (Resolusi HP) + pacs.008',
+          amount: 'Rp 245 Jt via Proxy No. HP',
+          desc: 'Penyerang memindahkan dana memakai Proxy Address (nomor ponsel) agar jejak nomor rekening asli tersamar. FDS rule-based sederhana gagal mengenali keterkaitan perangkat dan mule network.',
+          control: 'Pantau anomali registrasi/portabilitas Proxy Address dan korelasi device fingerprint lintas rekening.'
+        },
+        layer3: {
+          id: 'layer3', x: 856, y: 214, w: 162, h: 82,
+          title: 'Layer 3 · Bank Mule 3', sub: 'Bank Swasta (Pass-Through)', tag: 'PASS-THROUGH',
+          perimeter: 'Behavioral AFDS & Pass-Through Detector',
+          iso: 'pacs.008 Fan-Out (3 Rekening)',
+          amount: 'Rp 240 Jt (Dwell Time 75 dtk)',
+          desc: 'Pola pass-through ekstrem (uang masuk dan langsung keluar dalam 75 detik) mulai memicu Behavioral AFDS. Pada Mode B, korelasi SOC & Anti-Scam membekukan dana tepat di Layer 3 ini.',
+          control: 'Pasang Behavioral AFDS real-time untuk mendeteksi dwell time < 2 menit dan aktifkan auto-hold/circuit breaker.'
+        },
+        layer4: {
+          id: 'layer4', x: 730, y: 424, w: 162, h: 82,
+          title: 'Layer 4 · Bank Mule 4', sub: 'Bank Besar / HIMBARA (Fan-Out)', tag: 'ALERT MERAH',
+          perimeter: 'Real-Time AFDS + Anti-Scam Block',
+          iso: 'pacs.008 + camt.056 (Recall)',
+          amount: 'Rp 235 Jt (Sebagian Lolos)',
+          desc: 'AFDS canggih di bank besar mendeteksi pola fan-in/fan-out dan kecepatan abnormal, memicu Alert Merah. Namun pada Mode A (respon > 30 menit), dana sudah telanjur melompat ke Layer 5 sebelum blokir efektif.',
+          control: 'Otomatisasi pertukaran sinyal Anti-Scam antarbank (API/kanal BI-FAST) agar blokir aktif dalam hitungan menit.'
+        },
+        layer5: {
+          id: 'layer5', x: 356, y: 446, w: 168, h: 82,
+          title: 'Layer 5 · Bank Exit', sub: 'Cash-Out (ATM / E-Wallet / Crypto)', tag: 'CASH-OUT',
+          perimeter: 'Cash-Out Guard (ATM/Cardless & E-Wallet)',
+          iso: 'pacs.002 Final → Tarik Tunai',
+          amount: 'Rp 230 Jt Cair / Hilang Jejak',
+          desc: 'Titik akhir pencairan dana melalui tarik tunai ATM/cardless, top-up dompet digital, atau pembelian aset cair. Begitu dana keluar di Layer 5, tingkat pemulihan (recovery rate) turun drastis.',
+          control: 'Batasi limit tarik tunai/cardless bagi rekening penerima dana masuk berisiko tinggi (cooling-off period).'
+        }
+      };
+
+      // Each hop routes cleanly through CI-HUB for BI-FAST steps
+      const HOPS = [
+        {
+          id: 1,
+          from: 'attacker', via: null, to: 'origin',
+          shieldPos: { x: 98, y: 164 },
+          shieldLabel: 'WAF & DMZ',
+          timeMin: 2, timeStr: '02:15',
+          iso: 'HTTP RCE → Lateral Movement (DMZ → INTERNAL)',
+          amountText: 'Akses KOMI / Egress',
+          breach: {
+            status: 'BYPASS',
+            headline: 'Tahap 1: Kompromi Website di DMZ & Lateral Movement ke KOMI',
+            body: 'Penyerang memanfaatkan celah web di zona DMZ untuk menanam web shell, lalu mencuri kredensial service account yang memiliki akses ke middleware KOMI di zona INTERNAL tanpa penghalang PAM.',
+            log: '[02:15] CRITICAL: WAF/DMZ & Micro-segmentation BYPASSED. Akses tidak sah terdeteksi di jalur Internal → KOMI.'
+          },
+          blocked: {
+            status: 'ALERT',
+            headline: 'Tahap 1: Kompromi Website di DMZ Memicu Peringatan SIEM SOC',
+            body: 'Penyerang mencoba menembus DMZ dan melakukan lateral movement ke KOMI. Korelasi log WAF + SIEM langsung menyalakan Yellow Alert di SOC Bank Korban.',
+            log: '[02:15] WARNING: Anomali trafik DMZ → INTERNAL terdeteksi oleh korelasi log WAF-SIEM SOC.'
+          }
+        },
+        {
+          id: 2,
+          from: 'origin', via: 'cihub', to: 'layer1',
+          shieldPos: { x: 266, y: 248 },
+          shieldLabel: 'AFDS EGRESS',
+          timeMin: 5, timeStr: '05:10',
+          iso: 'pacs.008 (Rp 250.000.000) → pacs.002 ACSP',
+          amountText: 'Rp 250 Jt → Layer 1',
+          breach: {
+            status: 'BYPASS',
+            headline: 'Tahap 2: Dana Rp 250 Juta Keluar via BI-FAST (Irrevocable) ke Layer 1',
+            body: 'Instruksi pacs.008 Rp 250 juta (batas maksimal BI-FAST) dikirim lewat CI-Connector ke CI-HUB Bank Indonesia. Karena tidak ada AFDS inline & circuit breaker di Egress, dana langsung disetelmen ke Bank Mule Layer 1.',
+            log: '[05:10] BYPASS: AFDS Egress terlewati. pacs.008 Rp 250 Jt sukses (ACSP) via CI-HUB → Bank Mule Layer 1.'
+          },
+          blocked: {
+            status: 'ALERT',
+            headline: 'Tahap 2: Dana Rp 250 Juta Lolos Awal ke Layer 1 — AFDS Menyalakan Alert Merah',
+            body: 'Transaksi pertama Rp 250 juta berhasil masuk ke Layer 1 via CI-HUB, namun anomali velocity & rekening tujuan baru langsung memicu Alert Merah di SOC dan mengaktifkan protokol darurat PADG 14/2025.',
+            log: '[05:10] ALERT MERAH: pacs.008 Rp 250 Jt menuju Layer 1 ditandai anomali. Tim SOC memulai pelaporan cepat < 30 mnt.'
+          }
+        },
+        {
+          id: 3,
+          from: 'layer1', via: 'cihub', to: 'layer2',
+          shieldPos: { x: 480, y: 122 },
+          shieldLabel: 'VELOCITY FDS',
+          timeMin: 8, timeStr: '08:40',
+          iso: 'prxy.003 (Proxy HP) + pacs.008 (Split Rp 245 Jt)',
+          amountText: 'Rp 245 Jt → Layer 2',
+          breach: {
+            status: 'BYPASS',
+            headline: 'Tahap 3: Structuring & Lompatan via Proxy Address ke Layer 2',
+            body: 'Dalam 3 menit, sindikat memecah dana di Layer 1 dan mengirim Rp 245 juta lewat BI-FAST ke Bank Digital Layer 2 menggunakan Proxy Address (No. HP) untuk mengaburkan nomor rekening tujuan.',
+            log: '[08:40] BYPASS: Velocity FDS Layer 1 tidak memblokir structuring. Dana Rp 245 Jt lompat via Proxy HP ke Layer 2.'
+          },
+          blocked: {
+            status: 'ALERT',
+            headline: 'Tahap 3: Pelacakan Real-Time Mengikuti Lompatan Proxy ke Layer 2',
+            body: 'Dana sempat berpindah ke Layer 2 via Proxy Address. Namun Bank Korban telah mengirim notifikasi fraud awal di menit ke-8 (jauh di bawah batas SLA 30 menit PADG 14/2025) sehingga jaringan Anti-Scam aktif.',
+            log: '[08:40] COORDINATION: Laporan fraud awal masuk ke BI & Anti-Scam Center pada menit 08:40 (< SLA 30 mnt).'
+          }
+        },
+        {
+          id: 4,
+          from: 'layer2', via: 'cihub', to: 'layer3',
+          shieldPos: { x: 702, y: 194 },
+          shieldLabel: 'BEHAVIORAL FDS',
+          timeMin: 12, timeStr: '12:20',
+          iso: 'pacs.008 (Pass-Through 75 dtk — Rp 240 Jt)',
+          amountText: 'Rp 240 Jt → Layer 3',
+          breach: {
+            status: 'ALERT',
+            headline: 'Tahap 4: Pass-Through Cepat di Layer 3 Memicu Yellow Alert FDS',
+            body: 'Dana mendarat di Layer 3 dan langsung di-routing keluar dalam 75 detik. Behavioral AFDS di Layer 3 mulai menaikkan Yellow Alert, tetapi karena belum terintegrasi auto-block, transaksi tetap diproses.',
+            log: '[12:20] WARNING: Behavioral AFDS Layer 3 mendeteksi dwell time 75 dtk (pass-through), namun tanpa auto-block.'
+          },
+          blocked: {
+            status: 'BLOCKED',
+            headline: 'Tahap 4: CIRCUIT BREAKER AKTIF — Dana Rp 240 Juta Dibekukan di Layer 3!',
+            body: 'Kombinasi sinyal Anti-Scam dari Bank Korban (menit ke-8) dan Behavioral AFDS di Layer 3 (deteksi dwell time 75 detik) memicu Circuit Breaker & pembekuan rekening otomatis. Rantai 5 layer berhasil diputus!',
+            log: '[12:20] BLOCKED 🛡️: Behavioral AFDS + Anti-Scam Hold membekukan Rp 240 Jt di Layer 3! Lompatan ke Layer 4–5 digagalkan.'
+          }
+        },
+        {
+          id: 5,
+          from: 'layer3', via: 'cihub', to: 'layer4',
+          shieldPos: { x: 690, y: 344 },
+          shieldLabel: 'ANTI-SCAM AFDS',
+          timeMin: 19, timeStr: '19:05',
+          iso: 'pacs.008 (Fan-Out Rp 235 Jt) → Alert Merah',
+          amountText: 'Rp 235 Jt → Layer 4',
+          breach: {
+            status: 'ALERT',
+            headline: 'Tahap 5: Alert Merah di Bank Besar Layer 4 — Koordinasi Terlambat',
+            body: 'Bank Besar (HIMBARA) di Layer 4 mendeteksi pola fan-in/fan-out dan menyalakan Alert Merah. Namun karena laporan manual dari Bank Korban belum diterima, perintah blokir terlambat beberapa menit.',
+            log: '[19:05] ALERT MERAH: AFDS Layer 4 mendeteksi mule fan-out Rp 235 Jt, tetapi instruksi blokir resmi belum tiba.'
+          },
+          blocked: {
+            status: 'STOPPED',
+            headline: 'Tahap 5: Jalur ke Layer 4 Steril — Tidak Ada Dana yang Lolos',
+            body: 'Karena rekening mule di Layer 3 sudah dibekukan pada menit ke-12, tidak ada satu rupiah pun yang dapat melompat ke Layer 4. Tim Investigasi memulai proses recall/pengembalian dana (camt.056 / pacs.004).',
+            log: '[19:05] SAFE: Jalur Layer 3 → Layer 4 tertutup. Proses camt.056 / pacs.004 (return) diinisiasi.'
+          }
+        },
+        {
+          id: 6,
+          from: 'layer4', via: 'cihub', to: 'layer5',
+          shieldPos: { x: 526, y: 404 },
+          shieldLabel: 'CASH-OUT GUARD',
+          timeMin: 27, timeStr: '27:45',
+          iso: 'pacs.008 → pacs.002 Final (Exit Rp 230 Jt)',
+          amountText: 'Rp 230 Jt → Layer 5',
+          breach: {
+            status: 'BYPASS',
+            headline: 'Tahap 6: Dana Menembus Layer 5 (Bank Exit) untuk Cash-Out',
+            body: 'Sebelum batas 30 menit tercapai, Rp 230 juta sudah berpindah melewati Layer 5 melalui jaringan BI-FAST dan mulai dicairkan lewat tarik tunai ATM/cardless serta top-up e-wallet.',
+            log: '[27:45] BREACH: Rp 230 Jt mendarat di Bank Exit Layer 5. Pencairan ATM/cardless & e-wallet berlangsung.'
+          },
+          blocked: {
+            status: 'STOPPED',
+            headline: 'Tahap 6: Bank Exit Layer 5 Tidak Menerima Aliran Dana Fraud',
+            body: 'Titik pencairan (ATM/cardless & e-wallet) di Layer 5 nihil transaksi fraud. Audit forensik pada DMZ Bank Korban berjalan paralel untuk menutup celah web shell.',
+            log: '[27:45] SAFE: Rp 0 cair di Layer 5. Dana Rp 240 Jt aman dalam status blokir sementara di Layer 3.'
+          }
+        },
+        {
+          id: 7,
+          from: 'layer5', via: null, to: 'layer5',
+          shieldPos: { x: 356, y: 492 },
+          shieldLabel: 'SLA 30 MENIT',
+          timeMin: 34, timeStr: '34:10',
+          iso: 'camt.056 Terlambat (> 30 Menit PADG 14/2025)',
+          amountText: 'Kerugian: Rp 230 Jt',
+          breach: {
+            status: 'BYPASS',
+            headline: 'Tahap 7 (Akhir): Respon > 30 Menit — Dana Cair & Melanggar SLA PADG 14/2025',
+            body: 'Laporan fraud baru dikirim pada menit ke-34 (melewati batas 30 menit PADG 14/2025). Dana telah menyebar lewat 5 layer bank dan dicairkan di Layer 5. Pelajaran kunci: FDS inline + korelasi SOC + koordinasi cepat wajib aktif sebelum Egress.',
+            log: '[34:10] SLA BREACH: Laporan fraud > 30 menit. Rp 230 Jt telah dicairkan di Layer 5. Klik "Mode B" untuk membandingkan!'
+          },
+          blocked: {
+            status: 'BLOCKED',
+            headline: 'Tahap 7 (Akhir): Simulasi Selesai — 96% Dana Terselamatkan & Patuh PADG 14/2025',
+            body: 'Dengan pelaporan awal pada menit ke-8 (< 30 menit), Behavioral AFDS, dan Circuit Breaker di Layer 3, dana Rp 240 juta berhasil dibekukan sebelum mencapai Layer 4–5.',
+            log: '[15:00] SUCCESS 🛡️: Rantai 5 layer diputus di Layer 3. Kepatuhan SLA 30 menit PADG 14/2025 terpenuhi!'
+          }
+        }
+      ];
+
+      // =========================================================================
+      // STATE & DOM REFERENCES
+      // =========================================================================
+      let mode = 'breach'; // 'breach' | 'blocked'
+      let currentStep = 0; // 0..7
+      let isPlaying = false;
+      let speed = 1.0;
+      let animFrameId = null;
+      let stepStartTime = 0;
+      let stepDurationMs = 2600;
+      let selectedNodeId = null;
+
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const conduitsGroup = document.getElementById('dynamicConduits');
+      const nodesLayer = document.getElementById('nodesLayer');
+      const shieldsLayer = document.getElementById('shieldsLayer');
+      const packetsLayer = document.getElementById('packetsLayer');
+      const stepperDots = document.getElementById('stepperDots');
+      const eventLog = document.getElementById('eventLog');
+
+      const btnPlay = document.getElementById('btnPlay');
+      const playIcon = document.getElementById('playIcon');
+      const playLabel = document.getElementById('playLabel');
+      const btnPrev = document.getElementById('btnPrev');
+      const btnNext = document.getElementById('btnNext');
+      const btnReset = document.getElementById('btnReset');
+      const btnSpeed = document.getElementById('btnSpeed');
+      const btnModeBreach = document.getElementById('btnModeBreach');
+      const btnModeBlocked = document.getElementById('btnModeBlocked');
+
+      // =========================================================================
+      // SVG RENDERING HELPERS
+      // =========================================================================
+      function el(tag, attrs, parent) {
+        const n = document.createElementNS(svgNS, tag);
+        for (const [k, v] of Object.entries(attrs || {})) {
+          n.setAttribute(k, v);
+        }
+        if (parent) parent.appendChild(n);
+        return n;
+      }
+
+      function getHopPathString(hop) {
+        const a = NODES[hop.from];
+        const b = NODES[hop.to];
+        if (!hop.via) {
+          if (hop.from === hop.to) return null;
+          return `M ${a.x} ${a.y + a.h / 2} L ${b.x} ${b.y - b.h / 2}`;
+        }
+        const hub = NODES[hop.via];
+        // Smooth quadratic curve into CI-HUB and out to target bank
+        const mx1 = (a.x + hub.x) / 2;
+        const my1 = (a.y + hub.y) / 2 - 18;
+        const mx2 = (hub.x + b.x) / 2;
+        const my2 = (hub.y + b.y) / 2 - 18;
+        return `M ${a.x} ${a.y} Q ${mx1} ${my1} ${hub.x} ${hub.y} Q ${mx2} ${my2} ${b.x} ${b.y}`;
+      }
+
+      function initSvgElements() {
+        conduitsGroup.innerHTML = '';
+        nodesLayer.innerHTML = '';
+        shieldsLayer.innerHTML = '';
+
+        // 1. Conduits
+        HOPS.forEach((hop) => {
+          const d = getHopPathString(hop);
+          if (!d) return;
+          // Base rail
+          el('path', {
+            id: `rail-base-${hop.id}`,
+            d,
+            fill: 'none',
+            stroke: '#1E293B',
+            'stroke-width': '4',
+            'stroke-linecap': 'round'
+          }, conduitsGroup);
+
+          // Active overlay rail
+          el('path', {
+            id: `rail-active-${hop.id}`,
+            d,
+            fill: 'none',
+            stroke: '#38BDF8',
+            'stroke-width': '2.5',
+            'stroke-linecap': 'round',
+            opacity: '0.25'
+          }, conduitsGroup);
+        });
+
+        // 2. Bank & Layer Nodes (skip cihub which is static in SVG)
+        Object.values(NODES).forEach((node) => {
+          if (node.id === 'cihub') return;
+          const g = el('g', {
+            id: `node-${node.id}`,
+            class: 'node-clickable',
+            'data-node': node.id
+          }, nodesLayer);
+
+          const x0 = node.x - node.w / 2;
+          const y0 = node.y - node.h / 2;
+          const isOrigin = node.id === 'origin';
+          const isAttacker = node.id === 'attacker';
+
+          // Card background
+          el('rect', {
+            id: `rect-${node.id}`,
+            x: x0, y: y0, width: node.w, height: node.h, rx: 10,
+            fill: isAttacker ? '#2A0F14' : '#0F172A',
+            stroke: isAttacker ? '#EF4444' : (isOrigin ? '#F59E0B' : '#334155'),
+            'stroke-width': '1.8'
+          }, g);
+
+          // Top colored accent bar
+          el('rect', {
+            x: x0 + 1, y: y0 + 1, width: node.w - 2, height: 5, rx: 2,
+            fill: isAttacker ? '#EF4444' : (isOrigin ? '#EF3E23' : '#38BDF8')
+          }, g);
+
+          // Title
+          const t1 = el('text', {
+            x: node.x, y: y0 + 24,
+            'text-anchor': 'middle',
+            fill: '#F8FAFC',
+            'font-size': '11.5',
+            'font-weight': '700'
+          }, g);
+          t1.textContent = node.title;
+
+          // Subtitle
+          const t2 = el('text', {
+            x: node.x, y: y0 + 40,
+            'text-anchor': 'middle',
+            fill: '#94A3B8',
+            'font-size': '9.2'
+          }, g);
+          t2.textContent = node.sub;
+
+          // Extra internal zone pills for Bank Korban
+          if (isOrigin) {
+            const zLabels = ['DMZ', 'INT', 'EGR'];
+            zLabels.forEach((zl, i) => {
+              const bx = x0 + 12 + i * 48;
+              el('rect', {
+                x: bx, y: y0 + 50, width: 42, height: 18, rx: 4,
+                fill: i === 2 ? '#450A0A' : '#1E293B',
+                stroke: i === 2 ? '#EF4444' : '#475569',
+                'stroke-width': '1'
+              }, g);
+              const zt = el('text', {
+                x: bx + 21, y: y0 + 62,
+                'text-anchor': 'middle',
+                fill: i === 2 ? '#FCA5A5' : '#CBD5E1',
+                'font-size': '8.5',
+                'font-weight': '700',
+                class: 'mono'
+              }, g);
+              zt.textContent = zl;
+            });
+          }
+
+          // Bottom tag pill
+          const pillY = y0 + node.h - 22;
+          el('rect', {
+            id: `pill-${node.id}`,
+            x: node.x - 52, y: pillY, width: 104, height: 16, rx: 8,
+            fill: '#1E293B',
+            stroke: '#475569',
+            'stroke-width': '0.9'
+          }, g);
+          const pt = el('text', {
+            id: `pilltxt-${node.id}`,
+            x: node.x, y: pillY + 11,
+            'text-anchor': 'middle',
+            fill: '#CBD5E1',
+            'font-size': '8.5',
+            'font-weight': '700',
+            class: 'mono'
+          }, g);
+          pt.textContent = node.tag;
+
+          g.addEventListener('click', () => inspectNode(node.id));
+        });
+
+        // CI-HUB click handler
+        document.getElementById('node-cihub').addEventListener('click', () => inspectNode('cihub'));
+
+        // 3. Security Perimeter / FDS Checkpoint Shields
+        HOPS.forEach((hop) => {
+          if (hop.id === 7) return;
+          const sg = el('g', {
+            id: `shield-${hop.id}`,
+            class: 'node-clickable',
+            transform: `translate(${hop.shieldPos.x}, ${hop.shieldPos.y})`
+          }, shieldsLayer);
+
+          el('rect', {
+            id: `shield-bg-${hop.id}`,
+            x: -54, y: -14, width: 108, height: 28, rx: 14,
+            fill: '#0F172A',
+            stroke: '#475569',
+            'stroke-width': '1.4'
+          }, sg);
+
+          const st1 = el('text', {
+            id: `shield-lbl-${hop.id}`,
+            x: 0, y: -2,
+            'text-anchor': 'middle',
+            fill: '#E2E8F0',
+            'font-size': '8.2',
+            'font-weight': '700',
+            class: 'mono'
+          }, sg);
+          st1.textContent = hop.shieldLabel;
+
+          const st2 = el('text', {
+            id: `shield-st-${hop.id}`,
+            x: 0, y: 9,
+            'text-anchor': 'middle',
+            fill: '#94A3B8',
+            'font-size': '7.8',
+            'font-weight': '700',
+            class: 'mono'
+          }, sg);
+          st2.textContent = 'STANDBY';
+
+          sg.addEventListener('click', () => inspectNode(hop.to));
+        });
+
+        // 4. Stepper Dots
+        stepperDots.innerHTML = '';
+        for (let i = 1; i <= 7; i++) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.id = `dot-${i}`;
+          btn.className = 'h-2 rounded-full bg-slate-800 hover:bg-slate-600 transition';
+          btn.title = `Lompat ke Tahap ${i}`;
+          btn.addEventListener('click', () => {
+            stopPlay();
+            goToStep(i);
+          });
+          stepperDots.appendChild(btn);
+        }
+      }
+
+      // =========================================================================
+      // INSPECTOR & LOGGING
+      // =========================================================================
+      function inspectNode(nodeId) {
+        selectedNodeId = nodeId;
+        const n = NODES[nodeId];
+        if (!n) return;
+        document.getElementById('inspTitle').textContent = n.title;
+        document.getElementById('inspDesc').textContent = n.desc;
+        document.getElementById('inspPerimeter').textContent = n.perimeter;
+        document.getElementById('inspIso').textContent = n.iso;
+        document.getElementById('inspAmount').textContent = n.amount;
+        document.getElementById('inspControl').textContent = n.control;
+        const badge = document.getElementById('inspBadge');
+        badge.textContent = n.tag;
+        badge.className = 'mono text-[10px] font-bold px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-700';
+      }
+
+      function rebuildEventLog(upToStep) {
+        eventLog.innerHTML = '';
+        if (upToStep === 0) {
+          eventLog.innerHTML = `<div class="p-2 rounded bg-slate-900/80 border border-slate-800 text-slate-400 mono text-[11px]">[00:00] SOC & BI-FAST Telemetry standby. Pilih Mode A atau Mode B lalu jalankan simulasi.</div>`;
+          document.getElementById('logCount').textContent = '0 events';
+          return;
+        }
+        let count = 0;
+        for (let i = 0; i < upToStep; i++) {
+          const hop = HOPS[i];
+          const data = mode === 'breach' ? hop.breach : hop.blocked;
+          count++;
+          const div = document.createElement('div');
+          let borderCol = 'border-slate-700 text-slate-200 bg-slate-900/90';
+          if (data.status === 'BYPASS') borderCol = 'border-red-800/80 text-red-200 bg-red-950/40';
+          else if (data.status === 'ALERT') borderCol = 'border-amber-700/80 text-amber-200 bg-amber-950/40';
+          else if (data.status === 'BLOCKED' || data.status === 'STOPPED') borderCol = 'border-emerald-700/80 text-emerald-200 bg-emerald-950/40';
+
+          div.className = `p-2 rounded border mono text-[11px] leading-snug ${borderCol}`;
+          div.textContent = data.log;
+          eventLog.appendChild(div);
+        }
+        document.getElementById('logCount').textContent = `${count} events`;
+        eventLog.scrollTop = eventLog.scrollHeight;
+      }
+
+      // =========================================================================
+      // VISUAL STATE UPDATE PER STEP
+      // =========================================================================
+      function applyVisualState(step) {
+        // Reset all rails & shields first
+        HOPS.forEach((hop) => {
+          const rail = document.getElementById(`rail-active-${hop.id}`);
+          const sBg = document.getElementById(`shield-bg-${hop.id}`);
+          const sSt = document.getElementById(`shield-st-${hop.id}`);
+
+          if (hop.id > step) {
+            if (rail) {
+              rail.setAttribute('stroke', '#38BDF8');
+              rail.setAttribute('opacity', '0.22');
+              rail.classList.remove('dash-flow');
+            }
+            if (sBg && sSt) {
+              sBg.setAttribute('fill', '#0F172A');
+              sBg.setAttribute('stroke', '#475569');
+              sSt.textContent = 'STANDBY';
+              sSt.setAttribute('fill', '#94A3B8');
+            }
+          } else {
+            const data = mode === 'breach' ? hop.breach : hop.blocked;
+            let strokeColor = '#EF4444';
+            let shieldFill = '#450A0A';
+            let shieldStroke = '#EF4444';
+            let statusLabel = 'BYPASSED';
+            let textCol = '#FCA5A5';
+
+            if (data.status === 'ALERT') {
+              strokeColor = '#F59E0B';
+              shieldFill = '#451A03';
+              shieldStroke = '#F59E0B';
+              statusLabel = 'FDS ALERT';
+              textCol = '#FCD34D';
+            } else if (data.status === 'BLOCKED') {
+              strokeColor = '#10B981';
+              shieldFill = '#064E3B';
+              shieldStroke = '#10B981';
+              statusLabel = 'BLOCKED 🛡️';
+              textCol = '#6EE7B7';
+            } else if (data.status === 'STOPPED') {
+              strokeColor = '#334155';
+              shieldFill = '#064E3B';
+              shieldStroke = '#059669';
+              statusLabel = 'STERIL';
+              textCol = '#6EE7B7';
+            }
+
+            if (rail) {
+              rail.setAttribute('stroke', strokeColor);
+              rail.setAttribute('opacity', data.status === 'STOPPED' ? '0.3' : '0.95');
+              if (hop.id === step && data.status !== 'STOPPED') {
+                rail.classList.add('dash-flow');
+              } else {
+                rail.classList.remove('dash-flow');
+              }
+            }
+            if (sBg && sSt) {
+              sBg.setAttribute('fill', shieldFill);
+              sBg.setAttribute('stroke', shieldStroke);
+              sSt.textContent = statusLabel;
+              sSt.setAttribute('fill', textCol);
+            }
+          }
+        });
+
+        // Update node borders
+        Object.keys(NODES).forEach((id) => {
+          if (id === 'cihub') return;
+          const rect = document.getElementById(`rect-${id}`);
+          if (!rect) return;
+          rect.setAttribute('stroke-width', '1.8');
+        });
+
+        // Highlight active target node
+        if (step > 0) {
+          const activeHop = HOPS[step - 1];
+          const data = mode === 'breach' ? activeHop.breach : activeHop.blocked;
+          const targetRect = document.getElementById(`rect-${activeHop.to}`);
+          if (targetRect) {
+            const hl = data.status === 'BLOCKED' || data.status === 'STOPPED' ? '#10B981' : (data.status === 'ALERT' ? '#F59E0B' : '#EF4444');
+            targetRect.setAttribute('stroke', hl);
+            targetRect.setAttribute('stroke-width', '3');
+          }
+
+          // Pulse CI-HUB if BI-FAST hop
+          const hubPulse = document.getElementById('cihubPulse');
+          if (activeHop.via === 'cihub' && data.status !== 'STOPPED') {
+            hubPulse.setAttribute('opacity', '0.8');
+            hubPulse.classList.add('pulse-ring');
+          } else {
+            hubPulse.setAttribute('opacity', '0');
+            hubPulse.classList.remove('pulse-ring');
+          }
+
+          // Update Narrative Card
+          document.getElementById('narrStage').textContent = `TAHAP ${step} / 7 · ${mode === 'breach' ? 'MODE A (LOLOS 5 LAYER)' : 'MODE B (TERBLOKIR FDS)'}`;
+          document.getElementById('narrIso').textContent = `ISO 20022: ${activeHop.iso}`;
+          document.getElementById('narrHeadline').textContent = data.headline;
+          document.getElementById('narrBody').textContent = data.body;
+
+          const card = document.getElementById('narrativeCard');
+          card.style.borderLeftColor = data.status === 'BLOCKED' || data.status === 'STOPPED' ? '#10B981' : (data.status === 'ALERT' ? '#F59E0B' : '#EF3E23');
+
+          // Update KPIs & SLA Gauge
+          const elapsedMin = (mode === 'blocked' && step >= 4) ? 12 : activeHop.timeMin;
+          const elapsedStr = (mode === 'blocked' && step >= 4) ? '12:20' : activeHop.timeStr;
+          document.getElementById('kpiTime').textContent = elapsedStr;
+
+          const slaRem = Math.max(0, 30 - elapsedMin);
+          const slaPct = Math.min(100, Math.round((elapsedMin / 30) * 100));
+          document.getElementById('slaBar').style.width = `${slaPct}%`;
+          document.getElementById('slaPct').textContent = `${slaPct}% terpakai`;
+
+          const kpiSla = document.getElementById('kpiSla');
+          const slaBadge = document.getElementById('slaBadge');
+          if (mode === 'breach' && elapsedMin > 30) {
+            kpiSla.textContent = 'MELEWATI SLA!';
+            kpiSla.className = 'mono font-bold text-sm text-red-400';
+            slaBadge.textContent = 'PELANGGARAN SLA';
+            slaBadge.className = 'mono text-[11px] font-bold px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-700';
+          } else if (mode === 'blocked' && step >= 4) {
+            kpiSla.textContent = `Terlapor (08:40)`;
+            kpiSla.className = 'mono font-bold text-sm text-emerald-400';
+            slaBadge.textContent = 'PATUH PADG 14/2025';
+            slaBadge.className = 'mono text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700';
+          } else {
+            kpiSla.textContent = `${slaRem} mnt tersisa`;
+            kpiSla.className = `mono font-bold text-sm ${slaRem <= 10 ? 'text-amber-400' : 'text-emerald-400'}`;
+            slaBadge.textContent = slaRem <= 10 ? 'KRITIS' : 'DALAM SLA';
+            slaBadge.className = `mono text-[11px] font-bold px-2 py-0.5 rounded ${slaRem <= 10 ? 'bg-amber-950 text-amber-300 border border-amber-700' : 'bg-emerald-950 text-emerald-300 border border-emerald-700'}`;
+          }
+
+          const kpiFund = document.getElementById('kpiFundStatus');
+          if (mode === 'blocked' && step >= 4) {
+            kpiFund.textContent = 'Rp 240 Jt DIBEKUKAN 🛡️';
+            kpiFund.className = 'mono font-bold text-sm text-emerald-400';
+          } else if (mode === 'breach' && step >= 6) {
+            kpiFund.textContent = 'Rp 230 Jt CAIR (EXIT)';
+            kpiFund.className = 'mono font-bold text-sm text-red-400';
+          } else {
+            kpiFund.textContent = activeHop.amountText;
+            kpiFund.className = 'mono font-bold text-sm text-amber-300';
+          }
+
+          document.getElementById('stepTitleBar').textContent = data.headline;
+          document.getElementById('stepCounter').textContent = `Tahap ${step} / 7`;
+          inspectNode(activeHop.to);
+        } else {
+          document.getElementById('cihubPulse').setAttribute('opacity', '0');
+          document.getElementById('kpiTime').textContent = '00:00';
+          document.getElementById('kpiSla').textContent = '30:00 tersisa';
+          document.getElementById('kpiFundStatus').textContent = 'Siap Simulasi';
+          document.getElementById('slaBar').style.width = '0%';
+          document.getElementById('slaPct').textContent = '0% terpakai';
+          document.getElementById('stepTitleBar').textContent = 'Siap memulai simulasi — tekan "Jalankan Simulasi" atau klik "Langkah Berikut"';
+          document.getElementById('stepCounter').textContent = 'Tahap 0 / 7';
+        }
+
+        // Stepper dots styling
+        for (let i = 1; i <= 7; i++) {
+          const dot = document.getElementById(`dot-${i}`);
+          if (!dot) continue;
+          if (i <= step) {
+            const hopData = mode === 'breach' ? HOPS[i - 1].breach : HOPS[i - 1].blocked;
+            dot.className = `h-2 rounded-full transition ${
+              hopData.status === 'BLOCKED' || hopData.status === 'STOPPED' ? 'bg-emerald-500' :
+              hopData.status === 'ALERT' ? 'bg-amber-400' : 'bg-[#EF3E23]'
+            }`;
+          } else {
+            dot.className = 'h-2 rounded-full bg-slate-800 hover:bg-slate-600 transition';
+          }
+        }
+
+        rebuildEventLog(step);
+      }
+
+      // =========================================================================
+      // PACKET ANIMATION ALONG ACTIVE SVG PATH
+      // =========================================================================
+      function animatePacketForStep(step, onComplete) {
+        packetsLayer.innerHTML = '';
+        if (step <= 0 || step > HOPS.length) {
+          if (onComplete) onComplete();
+          return;
+        }
+        const hop = HOPS[step - 1];
+        const data = mode === 'breach' ? hop.breach : hop.blocked;
+        const pathEl = document.getElementById(`rail-active-${hop.id}`);
+
+        if (!pathEl || data.status === 'STOPPED') {
+          if (onComplete) {
+            setTimeout(() => { if (isPlaying) onComplete(); }, (1200 / speed));
+          }
+          return;
+        }
+
+        const totalLen = pathEl.getTotalLength();
+        const isBlockedStop = data.status === 'BLOCKED';
+        const maxFraction = isBlockedStop ? 0.78 : 1.0;
+
+        // Create moving packet group
+        const pkt = el('g', {}, packetsLayer);
+        el('circle', {
+          r: 10,
+          fill: isBlockedStop ? '#10B981' : '#EF3E23',
+          opacity: '0.28',
+          filter: 'url(#glowRed)'
+        }, pkt);
+        el('circle', {
+          r: 5.5,
+          fill: isBlockedStop ? '#34D399' : '#FF5A3C',
+          stroke: '#FFFFFF',
+          'stroke-width': '1.5'
+        }, pkt);
+
+        // Label pill moving with packet
+        el('rect', {
+          x: -36, y: -26, width: 72, height: 16, rx: 4,
+          fill: '#0F172A',
+          stroke: isBlockedStop ? '#10B981' : '#EF3E23',
+          'stroke-width': '1'
+        }, pkt);
+        const pTxt = el('text', {
+          x: 0, y: -15,
+          'text-anchor': 'middle',
+          fill: '#FFFFFF',
+          'font-size': '8.5',
+          'font-weight': '700',
+          class: 'mono'
+        }, pkt);
+        pTxt.textContent = hop.id === 1 ? 'WEB SHELL' : (hop.id === 3 ? 'prxy+pacs' : 'pacs.008');
+
+        stepStartTime = performance.now();
+        const dur = stepDurationMs / speed;
+
+        function tick(now) {
+          const rawT = Math.min(1, (now - stepStartTime) / dur);
+          // Ease in-out
+          const eased = rawT < 0.5 ? 2 * rawT * rawT : -1 + (4 - 2 * rawT) * rawT;
+          const pt = pathEl.getPointAtLength(totalLen * eased * maxFraction);
+          pkt.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
+
+          if (rawT < 1) {
+            animFrameId = requestAnimationFrame(tick);
+          } else {
+            if (isPlaying && onComplete) {
+              setTimeout(() => { if (isPlaying) onComplete(); }, 500 / speed);
+            }
+          }
+        }
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        animFrameId = requestAnimationFrame(tick);
+      }
+
+      // =========================================================================
+      // PLAYBACK CONTROLS
+      // =========================================================================
+      function goToStep(step, autoContinue = false) {
+        currentStep = Math.max(0, Math.min(7, step));
+        applyVisualState(currentStep);
+        if (currentStep > 0) {
+          animatePacketForStep(currentStep, () => {
+            if (autoContinue && isPlaying) {
+              if (currentStep < 7) {
+                goToStep(currentStep + 1, true);
+              } else {
+                stopPlay();
+              }
+            }
+          });
+        } else {
+          packetsLayer.innerHTML = '';
+        }
+      }
+
+      function startPlay() {
+        if (currentStep >= 7) currentStep = 0;
+        isPlaying = true;
+        playIcon.textContent = '⏸';
+        playLabel.textContent = 'Jeda';
+        btnPlay.className = 'px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition';
+        goToStep(currentStep + 1, true);
+      }
+
+      function stopPlay() {
+        isPlaying = false;
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        playIcon.textContent = '▶';
+        playLabel.textContent = currentStep >= 7 ? 'Putar Ulang' : 'Jalankan Simulasi';
+        btnPlay.className = 'px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition';
+      }
+
+      function setMode(newMode) {
+        stopPlay();
+        mode = newMode;
+        if (mode === 'breach') {
+          btnModeBreach.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition bg-[#EF3E23] text-white';
+          btnModeBlocked.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white';
+        } else {
+          btnModeBlocked.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition bg-emerald-600 text-white';
+          btnModeBreach.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white';
+        }
+        goToStep(currentStep > 0 ? currentStep : 0, false);
+      }
+
+      // Wire buttons
+      btnPlay.addEventListener('click', () => {
+        if (isPlaying) stopPlay();
+        else startPlay();
+      });
+      btnNext.addEventListener('click', () => {
+        stopPlay();
+        if (currentStep < 7) goToStep(currentStep + 1, false);
+      });
+      btnPrev.addEventListener('click', () => {
+        stopPlay();
+        if (currentStep > 0) goToStep(currentStep - 1, false);
+      });
+      btnReset.addEventListener('click', () => {
+        stopPlay();
+        goToStep(0, false);
+      });
+      btnSpeed.addEventListener('click', () => {
+        const speeds = [0.5, 1.0, 2.0];
+        const idx = speeds.indexOf(speed);
+        speed = speeds[(idx + 1) % speeds.length];
+        btnSpeed.textContent = `${speed.toFixed(1)}x`;
+      });
+      btnModeBreach.addEventListener('click', () => setMode('breach'));
+      btnModeBlocked.addEventListener('click', () => setMode('blocked'));
+
+      // Init on load & auto-start gentle step 1 preview after short delay
+      initSvgElements();
+      applyVisualState(0);
+      inspectNode('origin');
+      setTimeout(() => startPlay(), 600);
+    })();
+  </script>
+</body>
+</html>
