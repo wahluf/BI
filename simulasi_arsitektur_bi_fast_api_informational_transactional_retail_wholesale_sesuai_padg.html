@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Arsitektur BI-FAST API Informational &amp; Transactional (Retail &amp; Wholesale — Sesuai PADG)</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #090E1A;
+    color: #F1F5F9;
+    overflow-x: hidden;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .panel {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(51, 65, 85, 0.85);
+  }
+  .clickable {
+    cursor: pointer;
+    transition: filter 0.2s ease;
+  }
+  .clickable:hover {
+    filter: brightness(1.16);
+  }
+  .dash-info {
+    stroke-dasharray: 6 5;
+    animation: flowDash 1s linear infinite;
+  }
+  .dash-trx {
+    stroke-dasharray: 8 5;
+    animation: flowDash 0.85s linear infinite;
+  }
+  @keyframes flowDash {
+    to { stroke-dashoffset: -26; }
+  }
+  .scroll-thin::-webkit-scrollbar { width: 6px; }
+  .scroll-thin::-webkit-scrollbar-track { background: #0F172A; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+  <header class="border-b border-slate-800 bg-slate-950/95 backdrop-blur px-4 lg:px-6 py-3 sticky top-0 z-20">
+    <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-500 to-orange-500 flex items-center justify-center font-extrabold text-slate-950 text-xs shadow-lg">
+          API
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white leading-tight">
+            Simulasi Pergerakan BI-FAST API Informational &amp; API Transactional
+          </h1>
+          <p class="text-xs text-slate-400">
+            Arsitektur Kanal <strong>Retail</strong> &amp; <strong>Wholesale</strong> Perbankan · Kepatuhan <span class="mono text-sky-400">PADG 17/2023</span>, <span class="mono text-amber-400">PADG 14/2025</span>, &amp; <span class="mono text-emerald-400">PADG 3/2026</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Architecture Mode Toggle (Pasal 37 ayat 4 PADG 17/2023) -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-[11px] text-slate-400 hidden sm:inline">Model Koneksi (Pasal 37 PADG 17/2023):</span>
+        <div class="inline-flex rounded-lg bg-slate-900 p-1 border border-slate-700" role="group">
+          <button id="btnArchApi" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md transition bg-sky-500 text-slate-950">
+            Full BI-FAST API
+          </button>
+          <button id="btnArchHybrid" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white">
+            Hybrid (Connector + API Info)
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 lg:px-6 py-4 grid grid-cols-1 xl:grid-cols-12 gap-4">
+
+    <!-- LEFT: ANIMATED DIAGRAM + CONTROLS (8 COLS) -->
+    <section class="xl:col-span-8 flex flex-col gap-3">
+
+      <!-- Scenario Tabs & Playback Bar -->
+      <div class="panel rounded-xl p-3 flex flex-col gap-2.5">
+        <!-- 4 Scenario Buttons -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <button id="scRetail" type="button" class="px-2.5 py-2 rounded-lg text-left border transition bg-sky-950/70 border-sky-500 text-white">
+            <div class="mono text-[10px] text-sky-400 font-bold">SKENARIO 1 · RETAIL</div>
+            <div class="text-xs font-semibold leading-tight mt-0.5">ICT + Proxy Address</div>
+          </button>
+          <button id="scWholesale" type="button" class="px-2.5 py-2 rounded-lg text-left border transition bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500">
+            <div class="mono text-[10px] text-orange-400 font-bold">SKENARIO 2 · WHOLESALE</div>
+            <div class="text-xs font-semibold leading-tight mt-0.5">Bulk BCT (CMS &amp; H2H)</div>
+          </button>
+          <button id="scReconcile" type="button" class="px-2.5 py-2 rounded-lg text-left border transition bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500">
+            <div class="mono text-[10px] text-cyan-400 font-bold">SKENARIO 3 · EXCEPTION</div>
+            <div class="text-xs font-semibold leading-tight mt-0.5">Timeout &amp; Rekonsiliasi</div>
+          </button>
+          <button id="scStopBtn" type="button" class="px-2.5 py-2 rounded-lg text-left border transition bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500">
+            <div class="mono text-[10px] text-red-400 font-bold">SKENARIO 4 · PADG 14/2025</div>
+            <div class="text-xs font-semibold leading-tight mt-0.5">Stop Button &amp; Insiden</div>
+          </button>
+        </div>
+
+        <!-- Playback Row -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="btnPlay" type="button" class="px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition">
+              <span id="playIcon">▶</span> <span id="playLabel">Jalankan</span>
+            </button>
+            <button id="btnPrev" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+              ⏮ Mundur
+            </button>
+            <button id="btnNext" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+              Lanjut ⏭
+            </button>
+            <button id="btnReset" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition">
+              ↺ Reset
+            </button>
+            <button id="btnSpeed" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-400 mono text-xs font-semibold border border-slate-700 transition">
+              1.0x
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3 text-[11px]">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> API Informational</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span> API Transactional</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span> Stop Button / Alert</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASAL 37 AYAT (4) COMPLIANCE BANNER -->
+      <div id="padgRuleBanner" class="rounded-lg px-3.5 py-2 bg-sky-950/60 border border-sky-700/80 text-xs flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span class="mono font-bold text-sky-300">PASAL 37 AYAT (4) PADG 17/2023:</span>
+          <span id="padgRuleText" class="text-slate-200 ml-1">Mode Full BI-FAST API aktif — Peserta yang memakai <strong>BI-FAST API Transactional</strong> tidak dapat memakai <strong>BI-FAST Connector</strong> untuk koneksi ke BI-FAST Hub.</span>
+        </div>
+        <span id="padgRuleChip" class="mono text-[10px] font-bold px-2 py-0.5 rounded bg-sky-900 text-sky-200 border border-sky-600">CONNECTOR: NONAKTIF</span>
+      </div>
+
+      <!-- ANIMATED ARCHITECTURE SVG -->
+      <div class="panel rounded-xl p-3 relative overflow-hidden">
+        <div class="w-full overflow-x-auto">
+          <svg id="archSvg" viewBox="0 0 980 510" class="w-full h-auto min-w-[700px] select-none" role="img" aria-label="Diagram bergerak arsitektur BI-FAST API Informational dan API Transactional pada kanal retail dan wholesale">
+            <defs>
+              <filter id="glowSky" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="3" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowOrg" x="-40%" y="-40%" width="180%" height="180%">
+                <feGaussianBlur stdDeviation="3.5" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- Background -->
+            <rect x="0" y="0" width="980" height="510" fill="#0B1221" rx="8"/>
+
+            <!-- 4 Zone Background Columns -->
+            <rect x="12" y="34" width="206" height="462" rx="8" fill="#0F172A" stroke="#1E293B" stroke-width="1"/>
+            <rect x="232" y="34" width="248" height="462" rx="8" fill="#0F172A" stroke="#1E293B" stroke-width="1"/>
+            <rect x="494" y="34" width="242" height="462" rx="8" fill="#0F172A" stroke="#1E293B" stroke-width="1"/>
+            <rect x="750" y="34" width="218" height="462" rx="8" fill="#081C2E" stroke="#0369A1" stroke-width="1" stroke-dasharray="4 3"/>
+
+            <!-- Zone Column Headers -->
+            <text x="115" y="23" text-anchor="middle" fill="#94A3B8" font-size="10.5" font-weight="700" class="mono">1. KANAL AKSES BANK</text>
+            <text x="356" y="23" text-anchor="middle" fill="#94A3B8" font-size="10.5" font-weight="700" class="mono">2. DMZ &amp; INTERNAL BANK</text>
+            <text x="615" y="23" text-anchor="middle" fill="#38BDF8" font-size="10.5" font-weight="700" class="mono">3. EGRESS BI-FAST (PADG 17/2023)</text>
+            <text x="859" y="23" text-anchor="middle" fill="#7DD3FC" font-size="10.5" font-weight="700" class="mono">4. SENTRAL BI &amp; MITRA</text>
+
+            <!-- Dynamic Conduits Layer -->
+            <g id="conduitsLayer"></g>
+
+            <!-- Nodes Layer -->
+            <g id="nodesLayer"></g>
+
+            <!-- Moving Packets Layer -->
+            <g id="packetsLayer"></g>
+          </svg>
+        </div>
+
+        <!-- Step Progress Bar -->
+        <div class="mt-3 pt-2.5 border-t border-slate-800">
+          <div class="flex items-center justify-between text-[11px] mb-1.5">
+            <span id="stepBarTitle" class="font-semibold text-white">Siap menjalankan simulasi</span>
+            <span id="stepBarCount" class="mono text-sky-400">Langkah 0 / 5</span>
+          </div>
+          <div id="stepperRow" class="grid grid-cols-5 gap-1.5"></div>
+        </div>
+      </div>
+
+      <!-- STEP EXPLANATION CARD -->
+      <div id="explainCard" class="panel rounded-xl p-4 border-l-4 border-l-sky-500">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+          <span id="expType" class="mono text-xs font-bold uppercase text-sky-400">SIAP SIMULASI</span>
+          <span id="expIso" class="mono text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">ISO 20022 / API Spec</span>
+        </div>
+        <h2 id="expTitle" class="text-sm sm:text-base font-bold text-white mb-1">
+          Pemisahan Jalur BI-FAST API Informational vs API Transactional
+        </h2>
+        <p id="expBody" class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          Pilih salah satu skenario di atas (Retail ICT, Wholesale Bulk BCT, Timeout/Rekonsiliasi, atau Stop Button PADG 14/2025) lalu tekan <strong>Jalankan</strong>. Anda juga dapat membandingkan <strong>Full BI-FAST API</strong> vs <strong>Hybrid (Connector + API Info)</strong> di pojok kanan atas sesuai Pasal 37 ayat (4) PADG 17/2023.
+        </p>
+      </div>
+    </section>
+
+    <!-- RIGHT SIDEBAR: INSPECTOR + PADG COMPLIANCE MATRIX + LOG (4 COLS) -->
+    <aside class="xl:col-span-4 flex flex-col gap-3">
+
+      <!-- Component Inspector -->
+      <div class="panel rounded-xl p-3.5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-sky-400 uppercase tracking-wide">Inspektor Komponen &amp; PADG</span>
+          <span id="inspTag" class="mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">KLIK NODE</span>
+        </div>
+        <h3 id="inspName" class="text-sm font-bold text-white mb-1">Klik Komponen pada Diagram</h3>
+        <p id="inspDesc" class="text-xs text-slate-300 leading-relaxed mb-2.5">
+          Klik node mana pun (Kanal Retail, Kanal Wholesale, API Gateway, KOMI/FDS, BI-FAST API Informational, API Transactional, Connector, atau BI-FAST Hub) untuk melihat peran dan dasar regulasi PADG-nya.
+        </p>
+        <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 text-[11px] space-y-1.5">
+          <div class="flex justify-between gap-2">
+            <span class="text-slate-400">Jenis API / Protokol:</span>
+            <span id="inspApi" class="mono text-sky-300 text-right font-semibold">-</span>
+          </div>
+          <div class="flex justify-between gap-2">
+            <span class="text-slate-400">Dasar Regulasi:</span>
+            <span id="inspPadg" class="mono text-amber-300 text-right">-</span>
+          </div>
+          <div class="pt-1.5 border-t border-slate-800">
+            <span class="text-slate-400 block mb-0.5">Kewajiban Keamanan / Kontrol:</span>
+            <span id="inspSec" class="text-emerald-300 leading-snug block">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PADG Compliance Quick Checklist -->
+      <div class="panel rounded-xl p-3.5">
+        <div class="text-xs font-bold text-white uppercase tracking-wide mb-2">
+          Kepatuhan Wajib PADG BI-FAST
+        </div>
+        <div class="space-y-2 text-[11px]">
+          <div class="flex items-start gap-2 p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span class="text-sky-400 font-bold mono">P37</span>
+            <div class="text-slate-300"><strong class="text-white">PADG 17/2023 Ps. 37(4):</strong> Pengguna BI-FAST API Transactional tidak boleh memakai BI-FAST Connector ke BI-FAST Hub.</div>
+          </div>
+          <div class="flex items-start gap-2 p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span class="text-amber-400 font-bold mono">FDS</span>
+            <div class="text-slate-300"><strong class="text-white">PADG 14/2025:</strong> FDS wajib pada level akun &amp; transaksi di Peserta Pengirim (<em>first line of defense</em>) + kirim <em>whitelist</em> ke BI.</div>
+          </div>
+          <div class="flex items-start gap-2 p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span class="text-red-400 font-bold mono">SLA</span>
+            <div class="text-slate-300"><strong class="text-white">PADG 14/2025:</strong> Lapor fraud awal ≤ <strong>30 menit</strong> (tertulis ≤ 3 hari); lapor Insiden Siber ≤ <strong>1 jam</strong>; tersedia <strong>Stop Button</strong>.</div>
+          </div>
+          <div class="flex items-start gap-2 p-2 rounded bg-slate-900/80 border border-slate-800">
+            <span class="text-emerald-400 font-bold mono">REC</span>
+            <div class="text-slate-300"><strong class="text-white">PADG 14/2025 &amp; 3/2026:</strong> Rekonsiliasi CBS vs <em>member statement</em> ≥ 1x/hari; Audit TI &amp; Pentest ≥ 1x/tahun; Lampiran IA.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Telemetry Feed -->
+      <div class="panel rounded-xl p-3.5 flex-1 flex flex-col min-h-[190px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-white uppercase tracking-wide">Live API &amp; ISO 20022 Trace</span>
+          <span id="logCounter" class="mono text-[11px] text-slate-400">0 trace</span>
+        </div>
+        <div id="traceLog" class="scroll-thin flex-1 max-h-[210px] overflow-y-auto space-y-1.5 pr-1 text-[11px] mono">
+          <div class="p-2 rounded bg-slate-900/80 border border-slate-800 text-slate-400">
+            [READY] Pilih skenario &amp; klik Jalankan untuk melihat lalu lintas API.
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <script>
+    (function () {
+      const svgNS = 'http://www.w3.org/2000/svg';
+
+      // =========================================================================
+      // ARCHITECTURE NODES (4 COLUMNS)
+      // =========================================================================
+      const NODES = {
+        retail: {
+          id: 'retail', x: 115, y: 145, w: 174, h: 122, accent: '#38BDF8',
+          title: 'Kanal Retail', sub: 'Mobile, ATM/CRM, Teller',
+          chips: ['JakOne Mobile', 'ATM / CRM', 'Proxy HP/Email'],
+          api: 'ICT (Maks Rp 250 Jt) & RFP',
+          padg: 'PADG 17/2023 & FAQ BI-FAST',
+          desc: 'Kanal nasabah perorangan (Mobile Banking, Internet Banking, ATM/CRM, Teller) untuk transfer ritel 1-ke-1 (ICT), resolusi Proxy Address, dan persetujuan Request for Payment (RFP).',
+          sec: 'Autentikasi nasabah (MFA/biometrik/PIN), validasi nama rekening sebelum transfer, dan pembatasan limit harian per kanal.'
+        },
+        wholesale: {
+          id: 'wholesale', x: 115, y: 365, w: 174, h: 130, accent: '#F97316',
+          title: 'Kanal Wholesale', sub: 'CMS Korporasi & H2H SNAP',
+          chips: ['CMS (Payroll)', 'H2H / SNAP API', 'BCT · RFP · DDT'],
+          api: 'BCT (20–500 item), RFP, DDT',
+          padg: 'PADG 17/2023 & PADG 3/2026',
+          desc: 'Kanal korporasi, instansi, dan mitra bisnis (Cash Management System & Open API SNAP Service Code 18) untuk Bulk Credit Transfer (BCT), penagihan RFP, dan Direct Debit E-Mandate.',
+          sec: 'Otorisasi Maker-Checker-Releaser, mTLS + strict IP whitelisting mitra H2H, serta manajemen risiko khusus kerja sama pihak lain (PADG 14/2025).'
+        },
+        apigw: {
+          id: 'apigw', x: 356, y: 112, w: 204, h: 86, accent: '#A855F7',
+          title: 'API Gateway & WAF (DMZ)', sub: 'Routing · Auth · Rate Limit',
+          chips: ['DMZ Perimeter', 'SNAP / REST'],
+          api: 'REST JSON / OAuth2 / mTLS',
+          padg: 'Lampiran IA PADG 14/2025',
+          desc: 'Gerbang penyangga DMZ yang memisahkan kanal publik/mitra dari jaringan internal. Melakukan verifikasi token, rate limiting, dan inspeksi WAF sebelum meneruskan request ke middleware internal.',
+          sec: 'Zero-trust micro-segmentation: server web publik dipisah total dari API transaksional; Anomaly Detection System di level infrastruktur TI.'
+        },
+        komi: {
+          id: 'komi', x: 356, y: 264, w: 204, h: 112, accent: '#F59E0B',
+          title: 'Middleware KOMI / ESB', sub: 'Translasi ISO 20022 + FDS',
+          chips: ['FDS Akun & Tx', 'Idempotency'],
+          api: 'ISO 8583/REST ↔ ISO 20022',
+          padg: 'PADG 14/2025 (First Line of Defense)',
+          desc: 'Otak internal BI-FAST milik bank: menerjemahkan format kanal/CBS ke ISO 20022, menjalankan FDS level akun & transaksi sebelum egress, mengatur antrean/throttling, dan menangani auto-inquiry pacs.028.',
+          sec: 'FDS wajib level akun & transaksi di Peserta Pengirim, PAM just-in-time untuk akses vendor, serta Early Warning System 24/7.'
+        },
+        cbs: {
+          id: 'cbs', x: 356, y: 422, w: 204, h: 86, accent: '#10B981',
+          title: 'Core Banking (CBS) & GL', sub: 'Earmark · Posting · Rekon',
+          chips: ['Saldo Real-Time', 'Rekon ≥ 1x/Hari'],
+          api: 'Jurnal GL BI-FAST & camt.053',
+          padg: 'PADG 14/2025 (Rekonsiliasi Berkala)',
+          desc: 'Melakukan earmark/hold dan debit/kredit rekening nasabah secara real-time, pencatatan GL perantara (GL Sharding di bank besar / STIP di BPD), serta rekonsiliasi harian terhadap member statement BI.',
+          sec: 'Rekonsiliasi CBS vs member statement BI wajib minimal 1x sehari atau lebih sesuai risk appetite mitigasi fraud.'
+        },
+        apiInfo: {
+          id: 'apiInfo', x: 615, y: 122, w: 206, h: 102, accent: '#38BDF8',
+          title: 'BI-FAST API Informational', sub: 'Non-Finansial · Read / Inquiry',
+          chips: ['Enquiry & Proxy', 'pacs.028 · camt.053'],
+          api: 'BI-FAST API Informational',
+          padg: 'Pasal 37(3)b PADG 17/2023',
+          desc: 'Spesifikasi API resmi BI untuk aktivitas informasional (non-pemindahan dana): Account Enquiry, resolusi Proxy, Payment Status Request (pacs.028), penarikan Member Statement (camt.053), dan pengkinian data peserta.',
+          sec: 'Dapat digunakan bersama API Transactional maupun bersama BI-FAST Connector; tetap wajib mTLS dan pemantauan anomali trafik.'
+        },
+        apiTrx: {
+          id: 'apiTrx', x: 615, y: 274, w: 206, h: 104, accent: '#F97316',
+          title: 'BI-FAST API Transactional', sub: 'Finansial · Eksekusi Dana',
+          chips: ['pacs.008 (ICT/BCT)', 'HSM + Stop Button'],
+          api: 'BI-FAST API Transactional',
+          padg: 'Pasal 37(3)a & (4) PADG 17/2023',
+          desc: 'Spesifikasi API resmi BI untuk instruksi pemindahan dana real-time (ICT, BCT, RFP, DDT, FICT). Sesuai Pasal 37(4) PADG 17/2023, jika memakai API Transactional, Peserta tidak dapat memakai BI-FAST Connector.',
+          sec: 'Wajib HSM digital signature, mTLS, jaringan privat redundan, dan dilengkapi Stop Button (PADG 14/2025) untuk memutus endpoint saat insiden.'
+        },
+        connector: {
+          id: 'connector', x: 615, y: 422, w: 206, h: 86, accent: '#64748B',
+          title: 'BI-FAST Connector (DC/DRC)', sub: 'Alternatif Eksklusif API Trx',
+          chips: ['Dedicated / Multi-Tenant', 'Pasal 37(4)'],
+          api: 'Gateway BI-FAST Connector',
+          padg: 'Pasal 37(4) PADG 17/2023',
+          desc: 'Gateway standar BI di DC/DRC bank (atau dikelola Penyelenggara Penunjang). Eksklusif terhadap API Transactional: aktif hanya pada Mode Hybrid (bukan Mode Full BI-FAST API).',
+          sec: 'Segmentasi antar-peserta (jika multi-tenancy), perubahan konfigurasi wajib izin tertulis Peserta, dan audit Lampiran IA berkala.'
+        },
+        bihub: {
+          id: 'bihub', x: 859, y: 196, w: 184, h: 134, accent: '#0EA5E9',
+          title: 'BI-FAST Hub (CI-HUB)', sub: 'Bank Indonesia · 24/7',
+          chips: ['FDS BI-FAST', 'Prefund & Setelmen', 'Proxy Directory'],
+          api: 'ISO 20022 Central Clearing',
+          padg: 'PADG 17/2023 s.d. PADG 3/2026',
+          desc: 'Infrastruktur sentral Bank Indonesia yang melakukan validasi format, pengecekan kecukupan prefund, FDS BI-FAST sentral (rules + whitelist peserta), direktori Proxy, dan setelmen real-time irrevocable.',
+          sec: 'Bank Indonesia dapat menghentikan sementara layanan Peserta yang terkena Insiden Siber untuk mencegah penularan ke ekosistem.'
+        },
+        destBank: {
+          id: 'destBank', x: 859, y: 404, w: 184, h: 100, accent: '#22C55E',
+          title: 'Bank Penerima', sub: 'Peserta Tujuan (Real-Time)',
+          chips: ['Kredit Nasabah', 'pacs.002 ACSP'],
+          api: 'pacs.008 In → pacs.002 Out',
+          padg: 'PADG 14/2025 (Mule Account)',
+          desc: 'Bank tujuan yang menerima instruksi kredit real-time dan mengkredit rekening penerima seketika, lalu mengembalikan konfirmasi final pacs.002 (ACSP/ACTC) ke BI-FAST Hub.',
+          sec: 'Sesuai PADG 14/2025, Peserta Penerima dapat membekukan/menutup rekening terindikasi mule account dan memproses pengembalian dana sesuai pedoman SRO.'
+        }
+      };
+
+      // =========================================================================
+      // 4 INTERACTIVE SCENARIOS (5 STEPS EACH)
+      // =========================================================================
+      const SCENARIOS = {
+        retail: {
+          name: 'Skenario 1 · Retail (ICT + Proxy Address)',
+          steps: [
+            {
+              from: 'retail', to: 'apigw', kind: 'info', label: 'Enquiry',
+              iso: 'REST Account/Proxy Enquiry',
+              title: '1. Nasabah Retail Memasukkan Nomor HP (Proxy) di Mobile Banking',
+              body: 'Nasabah membuka kanal Retail (mis. JakOne Mobile), memilih BI-FAST, dan memasukkan nomor HP penerima. Request validasi masuk ke API Gateway di zona DMZ untuk autentikasi sesi dan WAF check.',
+              trace: '[INFO] Retail Mobile → DMZ API Gateway: Request Proxy Resolution & Account Enquiry.'
+            },
+            {
+              from: 'apigw', to: 'apiInfo', via: 'komi', kind: 'info', label: 'API INFO',
+              iso: 'BI-FAST API Informational (prxy.003)',
+              title: '2. Jalur API Informational Memvalidasi Proxy & Nama Penerima ke BI-FAST Hub',
+              body: 'Middleware KOMI meneruskan inquiry lewat jalur BI-FAST API Informational (non-finansial) ke BI-FAST Hub untuk mencocokkan Proxy Address dan menarik nama pemilik rekening di Bank Penerima agar mencegah salah transfer.',
+              trace: '[INFO] KOMI → BI-FAST API Informational → BI-FAST Hub: Nama rekening terverifikasi.'
+            },
+            {
+              from: 'retail', to: 'cbs', via: 'komi', kind: 'trx', label: 'Earmark+FDS',
+              iso: 'CBS Earmark + FDS Level Akun & Tx',
+              title: '3. Konfirmasi Nasabah: Earmark Saldo di CBS & Screening FDS Internal',
+              body: 'Setelah nasabah mengonfirmasi nominal (maks Rp 250 juta, biaya maks Rp 2.500), CBS melakukan hold/debit saldo + biaya admin, sementara KOMI menjalankan FDS level akun & transaksi (wajib first line of defense PADG 14/2025).',
+              trace: '[TRX] CBS Hold saldo + KOMI FDS Screening (Level Akun & Transaksi): LOLOS (Clean).'
+            },
+            {
+              from: 'komi', to: 'bihub', via: 'egressTrx', kind: 'trx', label: 'pacs.008',
+              iso: 'BI-FAST API Transactional (pacs.008)',
+              title: '4. Pengiriman Instruksi Dana via Jalur Transaksional ke BI-FAST Hub',
+              body: 'Instruksi pacs.008 ditandatangani HSM dan dikirim melalui jalur Transaksional (BI-FAST API Transactional pada Mode Full API, atau BI-FAST Connector pada Mode Hybrid — sesuai Pasal 37 ayat 4 PADG 17/2023).',
+              trace: '[TRX] Egress Transactional (HSM+mTLS) → BI-FAST Hub: Cek Prefund & FDS BI-FAST OK.'
+            },
+            {
+              from: 'bihub', to: 'destBank', kind: 'trx', label: 'ACSP Final',
+              iso: 'pacs.002 (ACSP / U000 — Irrevocable)',
+              title: '5. Setelmen Real-Time & Kredit Seketika di Bank Penerima',
+              body: 'BI-FAST Hub menyelesaikan setelmen antar-rekening prefund secara real-time, meneruskan kredit ke Bank Penerima, dan mengirim konfirmasi final pacs.002 (ACSP) kembali ke nasabah Retail dalam hitungan detik.',
+              trace: '[TRX] BI-FAST Hub → Bank Penerima: Dana terkredit real-time (pacs.002 ACSP, tarif BI Rp 19).'
+            }
+          ]
+        },
+        wholesale: {
+          name: 'Skenario 2 · Wholesale (Bulk BCT via CMS & H2H SNAP)',
+          steps: [
+            {
+              from: 'wholesale', to: 'apigw', kind: 'trx', label: 'BCT File',
+              iso: 'CMS Bulk Upload / SNAP API (20–500 item)',
+              title: '1. Korporasi Mengirim Berkas Payroll Kolektif (BCT) via CMS / H2H SNAP',
+              body: 'Perusahaan mengunggah berkas payroll kolektif (20–500 transaksi) melalui CMS setelah persetujuan Maker-Checker-Releaser, atau menembak Open API SNAP (mTLS + IP Whitelist) ke API Gateway DMZ.',
+              trace: '[WHOLESALE] CMS/H2H → DMZ API Gateway: Batch BCT (250 karyawan lintas bank) terautentikasi.'
+            },
+            {
+              from: 'apigw', to: 'apiInfo', via: 'komi', kind: 'info', label: 'Cek Peserta',
+              iso: 'BI-FAST API Informational (Data Peserta)',
+              title: '2. API Informational Memastikan Status Peserta Tujuan & Validasi Massal',
+              body: 'Sebelum eksekusi dana, KOMI memanfaatkan BI-FAST API Informational untuk memastikan daftar kode BIC Bank Penerima aktif (kewajiban pengkinian data kepesertaan PADG 14/2025) serta validasi rekening tujuan.',
+              trace: '[INFO] KOMI → API Informational: Validasi status peserta & bulk identifier selesai.'
+            },
+            {
+              from: 'komi', to: 'cbs', kind: 'trx', label: 'Debit Giro',
+              iso: 'CBS Debit Giro Korporasi + FDS Bulk',
+              title: '3. Pendebitan Giro Korporasi di CBS & Screening FDS Transaksi Kolektif',
+              body: 'CBS mendebit rekening giro korporasi plus biaya BCT (tarif BI Rp 16/tx, maks Rp 2.100 ke nasabah). FDS internal memeriksa anomali total nilai, daftar whitelist korporasi, dan batas risiko H2H.',
+              trace: '[TRX] CBS Debit Giro + FDS Wholesale Whitelist Screening: APPROVED.'
+            },
+            {
+              from: 'komi', to: 'bihub', via: 'egressTrx', kind: 'trx', label: 'BCT pacs.008',
+              iso: 'BI-FAST API Transactional (Bulk Credit Transfer)',
+              title: '4. Eksekusi BCT ke BI-FAST Hub & Distribusi Multi-Bank (Partial Success)',
+              body: 'Jalur Transaksional mengirim instruksi BCT ke BI-FAST Hub. Mesin mendukung partial success: jika 2 rekening tujuan tutup, 248 transaksi tetap sukses real-time tanpa membatalkan seluruh berkas payroll.',
+              trace: '[TRX] Egress Transactional → BI-FAST Hub → Bank Penerima: 248 sukses (ACSP), 2 RJCT otomatis.'
+            },
+            {
+              from: 'bihub', to: 'cbs', via: 'apiInfo', kind: 'info', label: 'camt.053',
+              iso: 'BI-FAST API Informational (Member Statement)',
+              title: '5. API Informational Menarik Member Statement (camt.053) untuk Rekonsiliasi',
+              body: 'KOMI menarik laporan member statement (camt.053) melalui API Informational dan mencocokkannya otomatis dengan jurnal GL di CBS (kewajiban rekonsiliasi ≥ 1x sehari sesuai PADG 14/2025).',
+              trace: '[INFO] BI-FAST Hub → API Informational → CBS: Rekonsiliasi otomatis 248 sukses + refund 2 RJCT selesai.'
+            }
+          ]
+        },
+        reconcile: {
+          name: 'Skenario 3 · Timeout & Rekonsiliasi (Anti Auto-Reversal)',
+          steps: [
+            {
+              from: 'komi', to: 'bihub', via: 'egressTrx', kind: 'trx', label: 'pacs.008',
+              iso: 'pacs.008 → Timeout (U149 / HTTP 504)',
+              title: '1. Transaksi Terkirim via Jalur Transaksional Namun Mengalami Timeout',
+              body: 'Karena lonjakan TPS saat tanggal gajian atau latensi jaringan, respons pacs.002 melewati batas detik (timeout U149/504). ATURAN EMAS: KOMI dilarang melakukan auto-reversal ke nasabah!',
+              trace: '[WARN] Egress Transactional → BI-FAST Hub: Timeout (U149). Status ditandai SUSPECT.'
+            },
+            {
+              from: 'komi', to: 'apiInfo', kind: 'info', label: 'pacs.028',
+              iso: 'BI-FAST API Informational (Payment Status Request)',
+              title: '2. KOMI Memicu Auto-Inquiry Status (pacs.028) lewat API Informational',
+              body: 'Alih-alih mengembalikan saldo secara gegabah (risiko double credit), KOMI mengirim Payment Status Request (pacs.028) bertahap (T+15 dtk, T+60 dtk, T+5 mnt) via jalur BI-FAST API Informational.',
+              trace: '[INFO] KOMI → API Informational: Kirim pacs.028 (Payment Status Request) ke BI-FAST Hub.'
+            },
+            {
+              from: 'apiInfo', to: 'bihub', kind: 'info', label: 'Status Check',
+              iso: 'BI-FAST Hub Lookup Transaction Status',
+              title: '3. BI-FAST Hub Memverifikasi Status Setelmen Final di Mesin Sentral',
+              body: 'BI-FAST Hub memeriksa ledger setelmen sentral untuk memastikan apakah transaksi sudah final (ACSP/ACTC) di Bank Penerima atau benar-benar ditolak (RJCT).',
+              trace: '[INFO] BI-FAST Hub: Verifikasi status final transaksi SUSPECT selesai.'
+            },
+            {
+              from: 'bihub', to: 'cbs', via: 'apiInfo', kind: 'info', label: 'camt.053',
+              iso: 'Member Statement Reconciliation (camt.053)',
+              title: '4. Sinkronisasi Member Statement ke Core Banking (CBS)',
+              body: 'Jika pacs.028 mengonfirmasi ACSP, KOMI memfinalisasi debit di CBS dan mengirim notifikasi sukses. Jika RJCT, baru auto-reversal dijalankan. Selisih tersisa diselesaikan via file camt.053 maksimal H+1.',
+              trace: '[INFO] API Informational (camt.053) → CBS: Status tersinkronisasi tanpa risiko double credit.'
+            },
+            {
+              from: 'cbs', to: 'retail', via: 'komi', kind: 'info', label: 'Notifikasi',
+              iso: 'Final Customer Notification (PBI Perlindungan Konsumen)',
+              title: '5. Notifikasi Final Transparan ke Nasabah Retail / Wholesale',
+              body: 'Nasabah menerima kepastian status transaksi secara otomatis di aplikasi/CMS tanpa perlu menunggu klaim manual berhari-hari, sekaligus menjaga keseimbangan jurnal GL BI-FAST.',
+              trace: '[DONE] CBS → Kanal Nasabah: Status final dikirim & rekonsiliasi GL balance 100%.'
+            }
+          ]
+        },
+        stopbtn: {
+          name: 'Skenario 4 · Insiden Siber & Stop Button (PADG 14/2025)',
+          steps: [
+            {
+              from: 'wholesale', to: 'apigw', kind: 'alert', label: 'Anomali H2H',
+              iso: 'Anomali Velocity & Pola Serangan Siber',
+              title: '1. Deteksi Anomali Lonjakan Transaksi Tidak Wajar dari Jalur H2H/DMZ',
+              body: 'Anomaly Detection System di level infrastruktur TI (wajib PADG 14/2025) dan WAF DMZ mendeteksi lonjakan ribuan request transfer tidak wajar dari kredensial mitra yang dicurigai terkompromi.',
+              trace: '[ALERT] DMZ/Anomaly Detection: Lonjakan trafik mencurigakan dari endpoint H2H terdeteksi!'
+            },
+            {
+              from: 'apigw', to: 'komi', kind: 'alert', label: 'FDS Trigger',
+              iso: 'FDS Internal + Early Warning System',
+              title: '2. FDS Internal & Early Warning System Mengonfirmasi Indikasi Fraud/Siber',
+              body: 'FDS level akun & transaksi di KOMI menandai pola mule account dan velocity ekstrem, memicu alarm prioritas tinggi ke Tim Incident Response & Recovery 24/7 bank.',
+              trace: '[ALERT] KOMI FDS: Indikasi Insiden Siber & Fraud terkonfirmasi. Tim Incident Response aktif.'
+            },
+            {
+              from: 'komi', to: 'apiTrx', kind: 'alert', label: 'STOP BUTTON',
+              iso: 'Aktivasi Stop Button (PADG 14/2025)',
+              title: '3. Aktivasi STOP BUTTON: Jalur Transaksional Diputus Sementara',
+              body: 'Sesuai PADG 14/2025, Peserta mengaktifkan Stop Button untuk memutus sementara koneksi endpoint BI-FAST Transactional agar tidak ada lagi dana keluar selama investigasi forensik berlangsung.',
+              trace: '[BLOCKED] STOP BUTTON AKTIF: Endpoint BI-FAST Transactional diputus sementara!'
+            },
+            {
+              from: 'apiInfo', to: 'bihub', kind: 'info', label: 'Lapor BI',
+              iso: 'SLA: Fraud ≤ 30 Mnt · Insiden Siber ≤ 1 Jam',
+              title: '4. Pelaporan Resmi ke Bank Indonesia Sesuai SLA PADG 14/2025',
+              body: 'Bank menyampaikan informasi awal fraud terkonfirmasi dalam ≤ 30 menit (laporan tertulis ≤ 3 hari kalender) dan pemberitahuan Insiden Siber ≤ 1 jam ke BI, sementara BI-FAST API Informational dipakai menarik log/statement audit.',
+              trace: '[COMPLIANCE] Laporan awal fraud (<30 mnt) & Insiden Siber (<1 jam) terkirim ke BI.'
+            },
+            {
+              from: 'bihub', to: 'destBank', kind: 'info', label: 'Blokir Mule',
+              iso: 'Koordinasi Pembekuan Rekening Mule (PADG 14/2025)',
+              title: '5. Koordinasi Pembekuan Mule Account & Pemulihan Layanan Terkendali',
+              body: 'Peserta Penerima membekukan rekening terindikasi mule account dan memproses pengembalian dana sesuai pedoman SRO. Layanan dibuka kembali hanya setelah audit/remediasi celah dinyatakan closed.',
+              trace: '[RECOVERY] Koordinasi blokir mule selesai; protokol pemulihan & audit keamanan berjalan.'
+            }
+          ]
+        }
+      };
+
+      // =========================================================================
+      // STATE
+      // =========================================================================
+      let archMode = 'api'; // 'api' | 'hybrid'
+      let scenarioKey = 'retail';
+      let currentStep = 0; // 0..5
+      let isPlaying = false;
+      let speed = 1.0;
+      let animId = null;
+
+      const conduitsLayer = document.getElementById('conduitsLayer');
+      const nodesLayer = document.getElementById('nodesLayer');
+      const packetsLayer = document.getElementById('packetsLayer');
+      const stepperRow = document.getElementById('stepperRow');
+      const traceLog = document.getElementById('traceLog');
+
+      const btnPlay = document.getElementById('btnPlay');
+      const playIcon = document.getElementById('playIcon');
+      const playLabel = document.getElementById('playLabel');
+
+      function el(tag, attrs, parent) {
+        const n = document.createElementNS(svgNS, tag);
+        for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
+        if (parent) parent.appendChild(n);
+        return n;
+      }
+
+      function resolveNodeId(id) {
+        if (id === 'egressTrx') return archMode === 'api' ? 'apiTrx' : 'connector';
+        return id;
+      }
+
+      // Static backbone connections for visual clarity
+      const BACKBONE_LINKS = [
+        { id: 'retail-apigw', a: 'retail', b: 'apigw', col: '#334155' },
+        { id: 'wholesale-apigw', a: 'wholesale', b: 'apigw', col: '#334155' },
+        { id: 'apigw-komi', a: 'apigw', b: 'komi', col: '#334155' },
+        { id: 'komi-cbs', a: 'komi', b: 'cbs', col: '#334155' },
+        { id: 'komi-apiInfo', a: 'komi', b: 'apiInfo', col: '#0369A1' },
+        { id: 'komi-apiTrx', a: 'komi', b: 'apiTrx', col: '#9A3412' },
+        { id: 'komi-connector', a: 'komi', b: 'connector', col: '#475569' },
+        { id: 'apiInfo-bihub', a: 'apiInfo', b: 'bihub', col: '#0369A1' },
+        { id: 'apiTrx-bihub', a: 'apiTrx', b: 'bihub', col: '#9A3412' },
+        { id: 'connector-bihub', a: 'connector', b: 'bihub', col: '#475569' },
+        { id: 'bihub-destBank', a: 'bihub', b: 'destBank', col: '#15803D' }
+      ];
+
+      function linkPathD(aId, bId) {
+        const a = NODES[aId];
+        const b = NODES[bId];
+        const mx = (a.x + b.x) / 2;
+        return `M ${a.x} ${a.y} C ${mx} ${a.y}, ${mx} ${b.y}, ${b.x} ${b.y}`;
+      }
+
+      function stepPathD(step) {
+        const fromId = resolveNodeId(step.from);
+        const toId = resolveNodeId(step.to);
+        if (!step.via) {
+          return linkPathD(fromId, toId);
+        }
+        const viaId = resolveNodeId(step.via);
+        const a = NODES[fromId];
+        const v = NODES[viaId];
+        const b = NODES[toId];
+        const mx1 = (a.x + v.x) / 2;
+        const mx2 = (v.x + b.x) / 2;
+        return `M ${a.x} ${a.y} C ${mx1} ${a.y}, ${mx1} ${v.y}, ${v.x} ${v.y} C ${mx2} ${v.y}, ${mx2} ${b.y}, ${b.x} ${b.y}`;
+      }
+
+      function renderDiagramBase() {
+        conduitsLayer.innerHTML = '';
+        nodesLayer.innerHTML = '';
+
+        // 1. Backbone rails
+        BACKBONE_LINKS.forEach((lk) => {
+          const isDisabled =
+            (archMode === 'api' && (lk.a === 'connector' || lk.b === 'connector')) ||
+            (archMode === 'hybrid' && (lk.a === 'apiTrx' || lk.b === 'apiTrx'));
+
+          el('path', {
+            d: linkPathD(lk.a, lk.b),
+            fill: 'none',
+            stroke: isDisabled ? '#1E293B' : lk.col,
+            'stroke-width': isDisabled ? '1.5' : '2.4',
+            'stroke-dasharray': isDisabled ? '3 4' : 'none',
+            opacity: isDisabled ? '0.45' : '0.75'
+          }, conduitsLayer);
+        });
+
+        // Placeholder for active animated step path
+        el('path', {
+          id: 'activeStepPath',
+          d: '',
+          fill: 'none',
+          stroke: '#38BDF8',
+          'stroke-width': '3.5',
+          'stroke-linecap': 'round',
+          opacity: '0'
+        }, conduitsLayer);
+
+        // 2. Nodes
+        Object.values(NODES).forEach((n) => {
+          const isDisabled =
+            (archMode === 'api' && n.id === 'connector') ||
+            (archMode === 'hybrid' && n.id === 'apiTrx');
+
+          const g = el('g', {
+            id: `node-${n.id}`,
+            class: 'clickable',
+            opacity: isDisabled ? '0.38' : '1'
+          }, nodesLayer);
+
+          const x0 = n.x - n.w / 2;
+          const y0 = n.y - n.h / 2;
+
+          el('rect', {
+            id: `rect-${n.id}`,
+            x: x0, y: y0, width: n.w, height: n.h, rx: 10,
+            fill: n.id === 'bihub' ? '#0C243D' : '#111C33',
+            stroke: isDisabled ? '#334155' : n.accent,
+            'stroke-width': isDisabled ? '1.2' : '1.8',
+            'stroke-dasharray': isDisabled ? '4 3' : 'none'
+          }, g);
+
+          // Top bar
+          el('rect', {
+            x: x0 + 1, y: y0 + 1, width: n.w - 2, height: 5, rx: 2,
+            fill: isDisabled ? '#475569' : n.accent
+          }, g);
+
+          // Title
+          const t1 = el('text', {
+            x: n.x, y: y0 + 24, 'text-anchor': 'middle',
+            fill: '#F8FAFC', 'font-size': '11.2', 'font-weight': '700'
+          }, g);
+          t1.textContent = n.title;
+
+          // Sub
+          const t2 = el('text', {
+            x: n.x, y: y0 + 39, 'text-anchor': 'middle',
+            fill: '#94A3B8', 'font-size': '9'
+          }, g);
+          t2.textContent = isDisabled ? 'NONAKTIF (Pasal 37(4) PADG)' : n.sub;
+
+          // Feature chips inside node
+          const chipStartY = y0 + 50;
+          n.chips.forEach((ch, idx) => {
+            const cy = chipStartY + idx * 20;
+            if (cy + 16 > y0 + n.h - 4) return;
+            el('rect', {
+              x: n.x - (n.w * 0.41), y: cy, width: n.w * 0.82, height: 16, rx: 4,
+              fill: '#0B1221', stroke: '#334155', 'stroke-width': '0.8'
+            }, g);
+            const ct = el('text', {
+              x: n.x, y: cy + 11, 'text-anchor': 'middle',
+              fill: isDisabled ? '#64748B' : '#CBD5E1',
+              'font-size': '8.2', 'font-weight': '600', class: 'mono'
+            }, g);
+            ct.textContent = ch;
+          });
+
+          g.addEventListener('click', () => inspectNode(n.id));
+        });
+
+        // Render stepper dots
+        stepperRow.innerHTML = '';
+        for (let i = 1; i <= 5; i++) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.id = `sdot-${i}`;
+          b.className = 'h-2 rounded-full bg-slate-800 hover:bg-slate-600 transition';
+          b.title = `Langkah ${i}`;
+          b.addEventListener('click', () => {
+            stopPlay();
+            goToStep(i, false);
+          });
+          stepperRow.appendChild(b);
+        }
+      }
+
+      function inspectNode(id) {
+        const n = NODES[id];
+        if (!n) return;
+        document.getElementById('inspName').textContent = n.title;
+        document.getElementById('inspDesc').textContent = n.desc;
+        document.getElementById('inspApi').textContent = n.api;
+        document.getElementById('inspPadg').textContent = n.padg;
+        document.getElementById('inspSec').textContent = n.sec;
+        const tag = document.getElementById('inspTag');
+        tag.textContent = n.id.toUpperCase();
+        tag.className = 'mono text-[10px] font-bold px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-700';
+      }
+
+      function rebuildTraceLog(step) {
+        const sc = SCENARIOS[scenarioKey];
+        traceLog.innerHTML = '';
+        if (step === 0) {
+          traceLog.innerHTML = `<div class="p-2 rounded bg-slate-900/80 border border-slate-800 text-slate-400">[READY] ${sc.name} siap dijalankan.</div>`;
+          document.getElementById('logCounter').textContent = '0 trace';
+          return;
+        }
+        for (let i = 0; i < step; i++) {
+          const st = sc.steps[i];
+          const div = document.createElement('div');
+          let cls = 'bg-sky-950/40 border-sky-800/70 text-sky-200';
+          if (st.kind === 'trx') cls = 'bg-orange-950/40 border-orange-700/70 text-orange-200';
+          if (st.kind === 'alert') cls = 'bg-red-950/50 border-red-700/80 text-red-200';
+          div.className = `p-2 rounded border leading-snug ${cls}`;
+          div.textContent = st.trace;
+          traceLog.appendChild(div);
+        }
+        document.getElementById('logCounter').textContent = `${step} trace`;
+        traceLog.scrollTop = traceLog.scrollHeight;
+      }
+
+      function applyStepVisuals(step) {
+        const sc = SCENARIOS[scenarioKey];
+        const activePath = document.getElementById('activeStepPath');
+
+        // Reset node strokes
+        Object.values(NODES).forEach((n) => {
+          const r = document.getElementById(`rect-${n.id}`);
+          if (!r) return;
+          const isDisabled =
+            (archMode === 'api' && n.id === 'connector') ||
+            (archMode === 'hybrid' && n.id === 'apiTrx');
+          r.setAttribute('stroke-width', isDisabled ? '1.2' : '1.8');
+        });
+
+        if (step === 0) {
+          activePath.setAttribute('opacity', '0');
+          activePath.classList.remove('dash-info', 'dash-trx');
+          document.getElementById('stepBarTitle').textContent = `${sc.name} — tekan Jalankan atau Lanjut`;
+          document.getElementById('stepBarCount').textContent = 'Langkah 0 / 5';
+          rebuildTraceLog(0);
+          for (let i = 1; i <= 5; i++) {
+            const d = document.getElementById(`sdot-${i}`);
+            if (d) d.className = 'h-2 rounded-full bg-slate-800 transition';
+          }
+          return;
+        }
+
+        const st = sc.steps[step - 1];
+        const strokeCol = st.kind === 'alert' ? '#EF4444' : (st.kind === 'trx' ? '#F97316' : '#38BDF8');
+
+        activePath.setAttribute('d', stepPathD(st));
+        activePath.setAttribute('stroke', strokeCol);
+        activePath.setAttribute('opacity', '0.95');
+        activePath.classList.remove('dash-info', 'dash-trx');
+        activePath.classList.add(st.kind === 'info' ? 'dash-info' : 'dash-trx');
+
+        // Highlight destination node
+        const toId = resolveNodeId(st.to);
+        const destRect = document.getElementById(`rect-${toId}`);
+        if (destRect) destRect.setAttribute('stroke-width', '3.2');
+
+        // Update Narrative Card
+        const kindLabel = st.kind === 'alert' ? 'PERINGATAN / STOP BUTTON' : (st.kind === 'trx' ? 'JALUR TRANSAKSIONAL' : 'JALUR INFORMATIONAL');
+        document.getElementById('expType').textContent = `LANGKAH ${step} / 5 · ${kindLabel}`;
+        document.getElementById('expType').className = `mono text-xs font-bold uppercase ${st.kind === 'alert' ? 'text-red-400' : (st.kind === 'trx' ? 'text-orange-400' : 'text-sky-400')}`;
+        document.getElementById('expIso').textContent = st.iso;
+        document.getElementById('expTitle').textContent = st.title;
+        document.getElementById('expBody').textContent = st.body;
+        document.getElementById('explainCard').style.borderLeftColor = strokeCol;
+
+        document.getElementById('stepBarTitle').textContent = st.title;
+        document.getElementById('stepBarCount').textContent = `Langkah ${step} / 5`;
+
+        for (let i = 1; i <= 5; i++) {
+          const d = document.getElementById(`sdot-${i}`);
+          if (!d) continue;
+          if (i <= step) {
+            const k = sc.steps[i - 1].kind;
+            d.className = `h-2 rounded-full transition ${k === 'alert' ? 'bg-red-500' : (k === 'trx' ? 'bg-orange-500' : 'bg-sky-400')}`;
+          } else {
+            d.className = 'h-2 rounded-full bg-slate-800 transition';
+          }
+        }
+
+        inspectNode(toId);
+        rebuildTraceLog(step);
+      }
+
+      function animatePacket(step, onDone) {
+        packetsLayer.innerHTML = '';
+        if (step <= 0) { if (onDone) onDone(); return; }
+        const st = SCENARIOS[scenarioKey].steps[step - 1];
+        const pathEl = document.getElementById('activeStepPath');
+        const totalLen = pathEl.getTotalLength();
+        if (!totalLen) { if (onDone) onDone(); return; }
+
+        const col = st.kind === 'alert' ? '#EF4444' : (st.kind === 'trx' ? '#F97316' : '#38BDF8');
+        const pkt = el('g', {}, packetsLayer);
+        el('circle', { r: 10, fill: col, opacity: '0.3', filter: st.kind === 'info' ? 'url(#glowSky)' : 'url(#glowOrg)' }, pkt);
+        el('circle', { r: 5.5, fill: col, stroke: '#FFFFFF', 'stroke-width': '1.5' }, pkt);
+        el('rect', { x: -42, y: -26, width: 84, height: 16, rx: 4, fill: '#0F172A', stroke: col, 'stroke-width': '1.1' }, pkt);
+        const pt = el('text', { x: 0, y: -15, 'text-anchor': 'middle', fill: '#FFFFFF', 'font-size': '8.2', 'font-weight': '700', class: 'mono' }, pkt);
+        pt.textContent = st.label;
+
+        const start = performance.now();
+        const dur = 2300 / speed;
+        if (animId) cancelAnimationFrame(animId);
+
+        function tick(now) {
+          const t = Math.min(1, (now - start) / dur);
+          const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+          const p = pathEl.getPointAtLength(totalLen * eased);
+          pkt.setAttribute('transform', `translate(${p.x}, ${p.y})`);
+          if (t < 1) {
+            animId = requestAnimationFrame(tick);
+          } else if (isPlaying && onDone) {
+            setTimeout(() => { if (isPlaying) onDone(); }, 450 / speed);
+          }
+        }
+        animId = requestAnimationFrame(tick);
+      }
+
+      function goToStep(step, autoNext) {
+        currentStep = Math.max(0, Math.min(5, step));
+        applyStepVisuals(currentStep);
+        if (currentStep > 0) {
+          animatePacket(currentStep, () => {
+            if (autoNext && isPlaying) {
+              if (currentStep < 5) goToStep(currentStep + 1, true);
+              else stopPlay();
+            }
+          });
+        } else {
+          packetsLayer.innerHTML = '';
+        }
+      }
+
+      function startPlay() {
+        if (currentStep >= 5) currentStep = 0;
+        isPlaying = true;
+        playIcon.textContent = '⏸';
+        playLabel.textContent = 'Jeda';
+        btnPlay.className = 'px-3.5 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition';
+        goToStep(currentStep + 1, true);
+      }
+
+      function stopPlay() {
+        isPlaying = false;
+        if (animId) cancelAnimationFrame(animId);
+        playIcon.textContent = '▶';
+        playLabel.textContent = currentStep >= 5 ? 'Putar Ulang' : 'Jalankan';
+        btnPlay.className = 'px-3.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition';
+      }
+
+      function setArchMode(newMode) {
+        stopPlay();
+        archMode = newMode;
+        const bApi = document.getElementById('btnArchApi');
+        const bHyb = document.getElementById('btnArchHybrid');
+        const txt = document.getElementById('padgRuleText');
+        const chip = document.getElementById('padgRuleChip');
+
+        if (archMode === 'api') {
+          bApi.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition bg-sky-500 text-slate-950';
+          bHyb.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white';
+          txt.innerHTML = 'Mode Full BI-FAST API aktif — Peserta yang memakai <strong>BI-FAST API Transactional</strong> tidak dapat memakai <strong>BI-FAST Connector</strong> untuk koneksi ke BI-FAST Hub.';
+          chip.textContent = 'CONNECTOR: NONAKTIF';
+          chip.className = 'mono text-[10px] font-bold px-2 py-0.5 rounded bg-sky-900 text-sky-200 border border-sky-600';
+        } else {
+          bHyb.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition bg-amber-400 text-slate-950';
+          bApi.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition text-slate-300 hover:text-white';
+          txt.innerHTML = 'Mode Hybrid aktif — Transaksi mengalir melalui <strong>BI-FAST Connector (DC/DRC)</strong> sementara <strong>BI-FAST API Informational</strong> tetap aktif untuk inquiry &amp; rekonsiliasi.';
+          chip.textContent = 'API TRX: NONAKTIF';
+          chip.className = 'mono text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-200 border border-amber-600';
+        }
+        renderDiagramBase();
+        goToStep(currentStep, false);
+      }
+
+      function setScenario(key) {
+        stopPlay();
+        scenarioKey = key;
+        const map = { retail: 'scRetail', wholesale: 'scWholesale', reconcile: 'scReconcile', stopbtn: 'scStopBtn' };
+        Object.entries(map).forEach(([k, id]) => {
+          const btn = document.getElementById(id);
+          if (k === key) {
+            btn.className = 'px-2.5 py-2 rounded-lg text-left border transition bg-sky-950/70 border-sky-500 text-white';
+          } else {
+            btn.className = 'px-2.5 py-2 rounded-lg text-left border transition bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500';
+          }
+        });
+        goToStep(0, false);
+        setTimeout(() => startPlay(), 250);
+      }
+
+      // Wire Controls
+      btnPlay.addEventListener('click', () => (isPlaying ? stopPlay() : startPlay()));
+      document.getElementById('btnNext').addEventListener('click', () => { stopPlay(); if (currentStep < 5) goToStep(currentStep + 1, false); });
+      document.getElementById('btnPrev').addEventListener('click', () => { stopPlay(); if (currentStep > 0) goToStep(currentStep - 1, false); });
+      document.getElementById('btnReset').addEventListener('click', () => { stopPlay(); goToStep(0, false); });
+      document.getElementById('btnSpeed').addEventListener('click', (e) => {
+        const list = [0.5, 1.0, 2.0];
+        speed = list[(list.indexOf(speed) + 1) % list.length];
+        e.currentTarget.textContent = `${speed.toFixed(1)}x`;
+      });
+
+      document.getElementById('btnArchApi').addEventListener('click', () => setArchMode('api'));
+      document.getElementById('btnArchHybrid').addEventListener('click', () => setArchMode('hybrid'));
+
+      document.getElementById('scRetail').addEventListener('click', () => setScenario('retail'));
+      document.getElementById('scWholesale').addEventListener('click', () => setScenario('wholesale'));
+      document.getElementById('scReconcile').addEventListener('click', () => setScenario('reconcile'));
+      document.getElementById('scStopBtn').addEventListener('click', () => setScenario('stopbtn'));
+
+      // Init
+      renderDiagramBase();
+      applyStepVisuals(0);
+      inspectNode('apiTrx');
+      setTimeout(() => startPlay(), 500);
+    })();
+  </script>
+</body>
+</html>
